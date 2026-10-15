@@ -26,6 +26,14 @@
 - 연결 코드는 만료·취소·사용 완료 상태를 갖고, 재발급 시 이전 코드를 무효화한다. 코드 입력만으로 기록을 열지 않고 로그인과 연결 확인을 거친다.
 - 웹의 현재 맵 전환으로 DM 기본 저장 위치를 바꾸지 않는다.
 
+## 산출물과 검증
+
+정적 목업 UI는 `web/`에 있고 의존성 없는 HTML·CSS·ES 모듈이다(docs/decisions/0001-static-mock-ui-stack.md). 패키지를 추가하지 않는다. Node는 Codex 런타임 v24 기준이다.
+
+- 단위·화면 테스트: `node --test --test-isolation=none "web/tests/*.test.mjs"`
+- 카탈로그 정합: `node web/scripts/check-screens.mjs`
+- 미리보기: `node web/scripts/serve.mjs` → http://localhost:5173/#/catalog (390×844 기준)
+
 ## 환경과 보안
 
 .env.example에는 변수명과 가상 값만 둔다. 실제 .env·토큰·인증서·DB 덤프·사용자 기록은 Git과 문서에 넣지 않는다. 로그에 DM 본문·이메일·토큰·Cookie·Authorization을 출력하지 않는다. 외부 기획 도구에는 설계·가상 예시만 사용한다.
