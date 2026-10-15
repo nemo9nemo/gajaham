@@ -13,7 +13,7 @@
 | 3. 구현 | Codex | `/codex-implement <브리프 경로>` 또는 Codex 앱에서 직접 | `codex/<작업ID>-<slug>` 브랜치의 변경·검사 결과 |
 | 4. 리뷰 | Claude | `/review-impl <브리프 경로>` | 브리프의 `리뷰 기록`에 판정·지적 |
 | 5. 수정 | Codex | 지적 항목을 같은 브리프로 다시 전달 | 수정 diff |
-| 6. 완료 | Codex 또는 Claude | 리뷰 APPROVED 후 커밋·PR | 커밋·진행표·변경 기록 |
+| 6. 완료 | Codex 또는 Claude | 리뷰 APPROVED 후 작업 브랜치에 커밋 → `/codex-review` → 사용자 요청 시 `/ship`으로 push·PR·PR Codex 리뷰([Git 절차](git-workflow.md)) | 커밋·PR·리뷰 코멘트 |
 
 리뷰·수정은 최대 3라운드로 한다. 3라운드에도 `BLOCKED`가 남으면 구현을 멈추고 브리프의 범위나 설계를 다시 정한다.
 
@@ -57,7 +57,7 @@ docs/plans/<작업ID>-<slug>.md 브리프를 구현해. 브리프 범위 밖은 
 `.claude/settings.json`에 OpenAI 공식 [codex-plugin-cc](https://github.com/openai/codex-plugin-cc) 마켓플레이스와 플러그인을 등록했다. 처음 열 때 Claude Code가 설치 여부를 묻는다. 설치 후 `/codex:setup`으로 로그인 상태를 확인한다.
 
 - `/codex:rescue`: Codex에 작업 위임(백그라운드 가능). `/codex:status`·`/codex:result`로 확인한다.
-- `/codex:review`·`/codex:adversarial-review`: Claude가 직접 수정한 소규모 변경을 Codex가 교차 리뷰할 때 쓴다.
+- `/codex:review`·`/codex:adversarial-review`: Claude가 직접 수정한 소규모 변경을 Codex가 교차 리뷰할 때 쓴다. 브랜치 단위 리뷰는 프로젝트 스킬 `/codex-review`·`/ship`을 쓴다.
 - `/codex:setup --enable-review-gate`는 응답마다 Codex 리뷰가 돌아 사용량이 크게 늘어나므로 켜지 않는다.
 
 ## 완료 표시
