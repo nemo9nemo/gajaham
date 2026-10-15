@@ -30,6 +30,10 @@
 
 .env.example에는 변수명과 가상 값만 둔다. 실제 .env·토큰·인증서·DB 덤프·사용자 기록은 Git과 문서에 넣지 않는다. 로그에 DM 본문·이메일·토큰·Cookie·Authorization을 출력하지 않는다. 외부 기획 도구에는 설계·가상 예시만 사용한다.
 
+## 브랜치·커밋·PR
+
+사용자의 2026-10-15 요청으로 main에 직접 커밋하지 않고 작업 브랜치(`codex/<작업ID>-<slug>`, `claude/<slug>`)에서 커밋한 뒤 PR로 합친다. 커밋은 로컬에만 쌓고 push와 PR 생성은 사용자가 요청할 때 모아서 한다. 절차는 docs/development/git-workflow.md다.
+
 ## Claude·Codex 분업
 
 사용자의 2026-10-15 요청으로 차곡찬과 같이 기획·설계와 구현 리뷰는 Claude Code, 구현은 Codex가 맡는다. 절차는 docs/development/claude-codex-workflow.md다. 구현 요청이 docs/plans의 브리프를 가리키면 그 브리프의 범위·하지 말 것·검증 명령을 따른다. 범위 밖 변경이 필요하면 구현하지 않고 보고한다. 구현 후 브리프의 'Codex 구현 보고'에 변경 파일·실행 명령과 결과·미실행 검사와 이유를 적는다. 브리프 작업의 커밋은 리뷰 기록이 APPROVED가 된 뒤에 한다. 브리프 없이 직접 받은 요청은 기존 규칙대로 진행한다.

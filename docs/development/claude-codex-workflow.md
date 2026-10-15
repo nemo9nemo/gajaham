@@ -13,7 +13,7 @@
 | 3. 구현 | Codex | `/codex-implement <브리프 경로>` 또는 Codex 앱에서 직접 | `codex/<작업ID>-<slug>` 브랜치의 변경·검사 결과 |
 | 4. 리뷰 | Claude | `/review-impl <브리프 경로>` | 브리프의 `리뷰 기록`에 판정·지적 |
 | 5. 수정 | Codex | 지적 항목을 같은 브리프로 다시 전달 | 수정 diff |
-| 6. 완료 | Codex 또는 Claude | 리뷰 APPROVED 후 커밋·PR | 커밋·진행표·변경 기록 |
+| 6. 완료 | Codex 또는 Claude | 리뷰 APPROVED 후 작업 브랜치에 커밋, push·PR은 사용자 요청 시 일괄([Git 절차](git-workflow.md)) | 커밋·PR |
 
 리뷰·수정은 최대 3라운드로 한다. 3라운드에도 `BLOCKED`가 남으면 구현을 멈추고 브리프의 범위나 설계를 다시 정한다.
 
