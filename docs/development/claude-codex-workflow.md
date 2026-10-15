@@ -44,7 +44,7 @@ PATH="$R/node/bin:$R/bin/fallback:$PATH" codex exec -C "C:\Users\love0\nemo9Dev\
 - `windows.sandbox="unelevated"`: 사용자 설정의 `elevated` 샌드박스는 CLI 실행 시 초기화가 실패해 모든 셸 명령이 거절된다(2026-10-13 확인). unelevated도 workspace-write 쓰기 제한은 유지한다.
 - PATH: Node·pnpm이 Codex 앱 런타임 경로에만 있어 앱 밖에서는 직접 지정한다.
 
-검사 분담: Codex는 샌드박스에서 브리프의 검증 명령을 실행한다. 샌드박스는 자식 프로세스 생성을 막을 수 있으므로(Node 테스트는 `--test-isolation=none` 사용) 샌드박스에서 못 돌린 검사와 DB·API 통합 검사는 리뷰 단계에서 Claude가 샌드박스 밖에서 다시 실행해 결과를 확인한다. 정적 목업 UI의 검사 명령은 AGENTS.md '산출물과 검증'을 따른다. 브라우저 화면 확인은 리뷰 단계에서 Claude가 `node web/scripts/serve.mjs`로 띄워 한다.
+검사 분담: Codex는 샌드박스에서 브리프의 검증 명령을 실행한다. 샌드박스는 자식 프로세스 생성을 막을 수 있으므로(Node 테스트는 `--test-isolation=none` 사용) 샌드박스에서 못 돌린 검사와 DB·API 통합 검사는 리뷰 단계에서 Claude가 샌드박스 밖에서 다시 실행해 결과를 확인한다. 스택이 정해지면 구체 명령을 여기에 적는다.
 
 Codex 앱이나 터미널에서 직접 구현할 때는 다음처럼 지시한다.
 
