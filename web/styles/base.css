@@ -145,6 +145,7 @@ input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--color-pe
 .map-option-body strong { font-size: 15px; }
 .current-map { font-size: 12px; }
 .place-summary { position: absolute; bottom: 0; left: 0; right: 0; z-index: 2; display: flex; flex-direction: column; gap: 9px; background: var(--color-surface); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-panel); padding: 10px 14px 14px; max-height: min(80dvh, 520px); overflow-y: auto; }
+.map-content > .place-summary { position: fixed; bottom: 92px; left: 50%; right: auto; transform: translateX(-50%); width: min(100%, 430px); max-height: min(520px, calc(100dvh - 106px)); }
 .summary-top { position: relative; min-height: 16px; justify-content: center; }
 .summary-top .close-control { position: absolute; right: 0; top: -6px; }
 .sheet-handle { width: 40px; height: 4px; border-radius: 2px; background: var(--color-handle); }

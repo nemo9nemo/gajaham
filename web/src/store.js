@@ -56,7 +56,7 @@ export function reduceAction(state, action, value) {
         ? updateUi(state, { notice: `원본 링크: ${place.sourceUrl}` }) : state;
     }
     case 'query': return updateUi(state, { query: value, sheet: null, selectedIds: [] });
-    case 'set-view': return updateUi(state, { view: value });
+    case 'set-view': return updateUi(state, { view: value, selectionMode: false, selectedIds: [] });
     case 'clear-query': return updateUi(state, { query: '' });
     case 'clear-filters': return updateUi(state, { category: '전체', visit: '', senderId: '' });
     case 'category': return updateUi(state, { category: value, sheet: null, selectedIds: [] });

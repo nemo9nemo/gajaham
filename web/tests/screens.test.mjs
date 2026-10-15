@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
 import { once } from 'node:events';
+import { readFileSync } from 'node:fs';
 import { CATALOG, catalogState } from '../src/screens/catalog.js';
 import { parseRoute, renderRoute } from '../src/router.js';
 import { SCENARIOS, createScenario } from '../src/data/scenarios.js';
@@ -273,6 +274,54 @@ test('목록 복제 버튼은 선택 모드 밖에도 있고 선택한 장소가
   assert.match(markup, /href="#\/todo\/UI-02\/2-4"[^>]*>선택해서 복제<\/a>/);
   store.dispatch('toggle-selection');
   assert.match(renderRoute(store.getState(), '#/map?view=list'), /<button[^>]*disabled[^>]*>선택해서 복제<\/button>/);
+});
+
+test('set-view는 양방향 보기 전환 때 선택 상태만 초기화한다', () => {
+  for (const [from, to] of [['list', 'map'], ['map', 'list']]) {
+    const state = createScenario('connected');
+    Object.assign(state.ui, { view: from, selectionMode: true, selectedIds: ['shared-cafe'], query: '성수', category: '카페' });
+    const before = structuredClone(state);
+    const next = reduceAction(state, 'set-view', to);
+    assert.deepEqual(next, { ...before, ui: { ...before.ui, view: to, selectionMode: false, selectedIds: [] } });
+    assert.deepEqual(state, before);
+  }
+});
+
+test('긴 목록·지도 실패의 요약 카드는 뷰포트 하단 탭 위 배치를 사용하고 지도 카드는 기존 배치를 유지한다', () => {
+  const css = readFileSync(new URL('../styles/base.css', import.meta.url), 'utf8');
+  function rule(selector) {
+    const entry = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find(([, selectors]) => selectors.trim() === selector);
+    assert.ok(entry, selector);
+    return Object.fromEntries(entry[2].split(';').filter((value) => value.trim()).map((declaration) => declaration.trim().split(/:\s*/)));
+  }
+  // Verify the CSS positioning contract; actual pixel layout needs a browser.
+  const overlay = rule('.map-content > .place-summary');
+  const tabs = rule('.tab-bar');
+  assert.equal(overlay.position, 'fixed');
+  assert.equal(parseFloat(overlay.bottom), parseFloat(tabs.bottom) + parseFloat(tabs.height));
+  assert.equal(overlay.left, '50%');
+  assert.equal(overlay.right, 'auto');
+  assert.equal(overlay.transform, 'translateX(-50%)');
+  assert.equal(overlay.width, tabs.width);
+  assert.match(overlay['max-height'], /calc\(100dvh - 106px\)/);
+  assert.equal(rule('.place-summary').position, 'absolute');
+  assert.equal(rule('.place-summary').bottom, '0');
+
+  for (const [scenario, hash] of [['connected', '#/map?view=list'], ['map-error', '#/map']]) {
+    const state = createScenario(scenario);
+    const place = state.places.find((item) => item.id === 'shared-cafe');
+    state.places.push(...Array.from({ length: 100 }, (_, index) => ({ ...place, id: `long-list-${index}` })));
+    const next = reduceAction(state, 'open-place', place.id);
+    const markup = renderRoute(next, hash);
+    const main = /<main class="map-content[^\"]*">(.*?)<\/main>/.exec(markup)?.[1];
+    assert.ok(main);
+    assert.equal([...main.matchAll(/class="place-row"/g)].length, 104);
+    assert.match(main, /<\/ul>.*<section class="place-summary"/);
+    assert.doesNotMatch(main, /map-canvas/);
+    assert.doesNotMatch(markup, /aria-modal|inert|role="dialog"|scrim/);
+  }
+  const map = reduceAction(createScenario('connected'), 'open-place', 'shared-cafe');
+  assert.match(renderRoute(map, '#/map'), /<div class="map-canvas">.*<section class="place-summary"/);
 });
 
 test('실제 이벤트 위임은 비모달 배경을 활성 상태로 두고 Tab을 가두지 않으며 Esc로 닫는다', async () => {

@@ -5,6 +5,7 @@ import { notice } from './components/notice.js';
 
 const app = document.querySelector('#app');
 const store = createStore();
+const composingInputs = new WeakSet();
 let lastSheet = null;
 let sheetTrigger = null;
 let preserveRouteUi = false;
@@ -76,9 +77,20 @@ app.addEventListener('click', (event) => {
   act(target.dataset.action, target.dataset.id, target.getAttribute('href'));
 });
 
-app.addEventListener('input', (event) => {
+app.addEventListener('compositionstart', (event) => {
+  if (event.target.matches('input[data-action]')) composingInputs.add(event.target);
+});
+
+app.addEventListener('compositionend', (event) => {
   const input = event.target;
   if (!input.matches('input[data-action]')) return;
+  composingInputs.delete(input);
+  act(input.dataset.action, input.value);
+});
+
+app.addEventListener('input', (event) => {
+  const input = event.target;
+  if (!input.matches('input[data-action]') || composingInputs.has(input) || event.isComposing) return;
   act(input.dataset.action, input.type === 'checkbox' ? input.dataset.id : input.value);
 });
 
