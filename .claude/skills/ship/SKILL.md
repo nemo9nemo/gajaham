@@ -9,7 +9,7 @@ disable-model-invocation: true
 
 대상: $ARGUMENTS
 
-1. `git fetch origin` 후 대상 브랜치를 정한다. 인자가 없으면 원격에 없거나 원격보다 앞선 로컬 작업 브랜치(`codex/*`, `claude/*`)가 후보다.
+1. `git fetch origin` 후 대상 브랜치를 정한다. 인자가 없으면 로컬 작업 브랜치(`codex/*`, `claude/*`) 중 다음 하나에 해당하면 후보다: 원격에 없거나 원격보다 앞섬, 열린 PR이 없음, 현재 SHA의 PR 리뷰가 `tmp/codex/pr-reviewed.txt`에 없음. 이미 원격과 SHA가 같은 브랜치는 push를 건너뛰고 남은 PR 생성·리뷰만 한다.
    - 이미 `origin/main`에 들어간 브랜치(`git merge-base --is-ancestor <브랜치> origin/main`)와 병합된 PR이 있는 브랜치(`gh pr list --head <브랜치> --state merged`)는 제외한다.
    - 브랜치의 현재 HEAD가 `tmp/codex/reviewed.txt`에 있는 브랜치만 push한다. 없거나 리뷰 후 커밋이 더 생긴 브랜치는 제외하고 `/codex-review`가 먼저 필요하다고 알린다.
    - push할 브랜치마다 `reviewed.txt`의 통과 SHA를 확정한다. 이후 단계는 브랜치 이름이 아니라 이 SHA를 쓴다. push할 목록(브랜치·SHA)과 제외한 목록을 사용자에게 보여준다.
@@ -32,5 +32,5 @@ disable-model-invocation: true
 
       셸 변수는 Bash 호출 사이에 남지 않으므로 위 블록은 하나의 Bash 호출로 실행한다.
 
-   4. 결과를 확인해 타당한 지적만 정리하고 `gh pr comment <번호> --body-file <파일>`로 "Codex 리뷰 (<커밋 SHA 앞 7자>)" 코멘트를 남긴다.
+   4. 결과를 확인해 타당한 지적만 정리하고 `gh pr comment <번호> --body-file <파일>`로 "Codex 리뷰 (<커밋 SHA 앞 7자>)" 코멘트를 남긴다. 코멘트까지 성공하면 `tmp/codex/pr-reviewed.txt`에 `<브랜치> <SHA> <PR 번호>` 한 줄을 추가한다. 중간에 실패하면 기록하지 않고 다음 `/ship`에서 다시 처리한다.
 4. PR 주소와 PR별 리뷰 결과를 사용자에게 보여준다. 수정이 필요하면 같은 브랜치에 커밋하고 `/codex-review`를 거쳐 다음 `/ship` 때 push한다(같은 PR에 반영된다). 병합은 사용자가 확인한 뒤 한다.
