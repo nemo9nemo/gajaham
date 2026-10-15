@@ -1,0 +1,10 @@
+{
+  "name": "gajaham-static-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-isolation=none \"tests/*.test.mjs\"",
+    "check": "node scripts/check-screens.mjs",
+    "serve": "node scripts/serve.mjs"
+  }
+}
