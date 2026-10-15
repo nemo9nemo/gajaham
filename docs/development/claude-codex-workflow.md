@@ -13,7 +13,7 @@
 | 3. 구현 | Codex | `/codex-implement <브리프 경로>` 또는 Codex 앱에서 직접 | `codex/<작업ID>-<slug>` 브랜치의 변경·검사 결과 |
 | 4. 리뷰 | Claude | `/review-impl <브리프 경로>` | 브리프의 `리뷰 기록`에 판정·지적 |
 | 5. 수정 | Codex | 지적 항목을 같은 브리프로 다시 전달 | 수정 diff |
-| 6. 완료 | Codex 또는 Claude | 리뷰 APPROVED 후 작업 브랜치에 커밋, push·PR은 사용자 요청 시 일괄([Git 절차](git-workflow.md)) | 커밋·PR |
+| 6. 완료 | Codex 또는 Claude | 리뷰 APPROVED 후 작업 브랜치에 커밋 → `/codex-review` → 사용자 요청 시 `/ship`으로 push·PR·PR Codex 리뷰([Git 절차](git-workflow.md)) | 커밋·PR·리뷰 코멘트 |
 
 리뷰·수정은 최대 3라운드로 한다. 3라운드에도 `BLOCKED`가 남으면 구현을 멈추고 브리프의 범위나 설계를 다시 정한다.
 
@@ -44,7 +44,7 @@ PATH="$R/node/bin:$R/bin/fallback:$PATH" codex exec -C "C:\Users\love0\nemo9Dev\
 - `windows.sandbox="unelevated"`: 사용자 설정의 `elevated` 샌드박스는 CLI 실행 시 초기화가 실패해 모든 셸 명령이 거절된다(2026-10-13 확인). unelevated도 workspace-write 쓰기 제한은 유지한다.
 - PATH: Node·pnpm이 Codex 앱 런타임 경로에만 있어 앱 밖에서는 직접 지정한다.
 
-검사 분담: Codex는 샌드박스에서 브리프의 검증 명령을 실행한다. 샌드박스는 자식 프로세스 생성을 막을 수 있으므로(Node 테스트는 `--test-isolation=none` 사용) 샌드박스에서 못 돌린 검사와 DB·API 통합 검사는 리뷰 단계에서 Claude가 샌드박스 밖에서 다시 실행해 결과를 확인한다. 스택이 정해지면 구체 명령을 여기에 적는다.
+검사 분담: Codex는 샌드박스에서 브리프의 검증 명령을 실행한다. 샌드박스는 자식 프로세스 생성을 막을 수 있으므로(Node 테스트는 `--test-isolation=none` 사용) 샌드박스에서 못 돌린 검사와 DB·API 통합 검사는 리뷰 단계에서 Claude가 샌드박스 밖에서 다시 실행해 결과를 확인한다. 정적 목업 UI의 검사 명령은 AGENTS.md '산출물과 검증'을 따른다. 브라우저 화면 확인은 리뷰 단계에서 Claude가 `node web/scripts/serve.mjs`로 띄워 한다.
 
 Codex 앱이나 터미널에서 직접 구현할 때는 다음처럼 지시한다.
 
@@ -57,7 +57,7 @@ docs/plans/<작업ID>-<slug>.md 브리프를 구현해. 브리프 범위 밖은 
 `.claude/settings.json`에 OpenAI 공식 [codex-plugin-cc](https://github.com/openai/codex-plugin-cc) 마켓플레이스와 플러그인을 등록했다. 처음 열 때 Claude Code가 설치 여부를 묻는다. 설치 후 `/codex:setup`으로 로그인 상태를 확인한다.
 
 - `/codex:rescue`: Codex에 작업 위임(백그라운드 가능). `/codex:status`·`/codex:result`로 확인한다.
-- `/codex:review`·`/codex:adversarial-review`: Claude가 직접 수정한 소규모 변경을 Codex가 교차 리뷰할 때 쓴다.
+- `/codex:review`·`/codex:adversarial-review`: Claude가 직접 수정한 소규모 변경을 Codex가 교차 리뷰할 때 쓴다. 브랜치 단위 리뷰는 프로젝트 스킬 `/codex-review`·`/ship`을 쓴다.
 - `/codex:setup --enable-review-gate`는 응답마다 Codex 리뷰가 돌아 사용량이 크게 늘어나므로 켜지 않는다.
 
 ## 완료 표시

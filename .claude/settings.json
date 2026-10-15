@@ -1,4 +1,9 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "includeCoAuthoredBy": false,
   "enabledPlugins": {
     "codex@openai-codex": true
   },

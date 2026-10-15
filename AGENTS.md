@@ -32,7 +32,7 @@
 
 ## 브랜치·커밋·PR
 
-사용자의 2026-10-15 요청으로 main에 직접 커밋하지 않고 작업 브랜치(`codex/<작업ID>-<slug>`, `claude/<slug>`)에서 커밋한 뒤 PR로 합친다. 커밋은 로컬에만 쌓고 push와 PR 생성은 사용자가 요청할 때 모아서 한다. 절차는 docs/development/git-workflow.md다.
+사용자의 2026-10-15 요청으로 main에 직접 커밋하지 않고 작업 브랜치(`codex/<작업ID>-<slug>`, `claude/<slug>`)에서 커밋한 뒤 PR로 합친다. 커밋 후 push 전에 Codex 코드 리뷰를 거친다. 커밋은 로컬에만 쌓고 push·PR 생성과 PR의 Codex 리뷰는 사용자가 요청할 때 모아서 한다. 커밋·PR에 Claude 서명 줄을 넣지 않는다. 절차는 docs/development/git-workflow.md다.
 
 ## Claude·Codex 분업
 
