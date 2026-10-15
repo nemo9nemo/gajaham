@@ -10,6 +10,7 @@ disable-model-invocation: true
 대상: $ARGUMENTS
 
 1. `git fetch origin` 후 대상 브랜치를 정한다. 인자가 없으면 원격에 없거나 원격보다 앞선 로컬 작업 브랜치(`codex/*`, `claude/*`)가 후보다.
+   - 이미 `origin/main`에 들어간 브랜치(`git merge-base --is-ancestor <브랜치> origin/main`)와 병합된 PR이 있는 브랜치(`gh pr list --head <브랜치> --state merged`)는 제외한다.
    - 브랜치의 현재 HEAD가 `tmp/codex/reviewed.txt`에 있는 브랜치만 push한다. 없거나 리뷰 후 커밋이 더 생긴 브랜치는 제외하고 `/codex-review`가 먼저 필요하다고 알린다.
    - push할 목록과 제외한 목록을 사용자에게 보여준다.
 2. 원격 저장소가 비어 있으면 기준점 `main`을 먼저 `git push -u origin main`으로 올린다. 원격 main이 로컬 main보다 앞서 있으면 로컬 main을 fast-forward하고, 대상 브랜치가 그 위에 없으면 사용자에게 알린다. 강제 push는 하지 않는다.
