@@ -21,10 +21,13 @@ disable-model-invocation: true
 
       ```bash
       SHA=<SHA>; N=<PR 번호>; W="tmp/codex/wt-pr-$N"
-      git worktree add --detach "$W" "$SHA" &&
-      R="$USERPROFILE/.cache/codex-runtimes/codex-primary-runtime/dependencies" &&
-      PATH="$R/node/bin:$R/bin/fallback:$PATH" codex exec -C "$W" review --base origin/main -c windows.sandbox='"unelevated"' -c mcp_servers.node_repl.enabled=false -o "tmp/codex/pr-$N-${SHA:0:7}-review.md"
-      echo "exit=$?"; git worktree remove --force "$W"
+      if git worktree add --detach "$W" "$SHA"; then
+        R="$USERPROFILE/.cache/codex-runtimes/codex-primary-runtime/dependencies"
+        PATH="$R/node/bin:$R/bin/fallback:$PATH" codex exec -C "$W" review --base origin/main -c windows.sandbox='"unelevated"' -c mcp_servers.node_repl.enabled=false -o "tmp/codex/pr-$N-${SHA:0:7}-review.md"
+        echo "exit=$?"; git worktree remove --force "$W"
+      else
+        echo "worktree 생성 실패: $W 가 이미 있으면 진행 중이거나 남은 리뷰인지 확인한다"
+      fi
       ```
 
       셸 변수는 Bash 호출 사이에 남지 않으므로 위 블록은 하나의 Bash 호출로 실행한다.

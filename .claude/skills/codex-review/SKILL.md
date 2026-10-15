@@ -13,10 +13,13 @@ argument-hint: [브랜치, 기본 현재 브랜치]
 
    ```bash
    SHA=<SHA>; S=<브랜치의 /를 -로>; W="tmp/codex/wt-$S"
-   git worktree add --detach "$W" "$SHA" &&
-   R="$USERPROFILE/.cache/codex-runtimes/codex-primary-runtime/dependencies" &&
-   PATH="$R/node/bin:$R/bin/fallback:$PATH" codex exec -C "$W" review --base main -c windows.sandbox='"unelevated"' -c mcp_servers.node_repl.enabled=false -o "tmp/codex/review-$S-${SHA:0:7}.md"
-   echo "exit=$?"; git worktree remove --force "$W"
+   if git worktree add --detach "$W" "$SHA"; then
+     R="$USERPROFILE/.cache/codex-runtimes/codex-primary-runtime/dependencies"
+     PATH="$R/node/bin:$R/bin/fallback:$PATH" codex exec -C "$W" review --base main -c windows.sandbox='"unelevated"' -c mcp_servers.node_repl.enabled=false -o "tmp/codex/review-$S-${SHA:0:7}.md"
+     echo "exit=$?"; git worktree remove --force "$W"
+   else
+     echo "worktree 생성 실패: $W 가 이미 있으면 진행 중이거나 남은 리뷰인지 확인한다"
+   fi
    ```
 
 3. 결과 파일을 읽고 지적마다 실제 코드를 확인해 타당한지 판단한다. Codex 지적을 그대로 옮기지 않는다.
