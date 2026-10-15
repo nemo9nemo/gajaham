@@ -1,7 +1,7 @@
 ---
 name: ship
 description: push 전 Codex 리뷰를 마친 로컬 작업 브랜치를 모아 push하고 main 대상 PR을 만든(또는 기존 PR을 갱신한) 뒤, PR마다 Codex 코드 리뷰를 돌려 PR 코멘트로 남긴다. 사용자가 push·PR을 요청할 때만 사용한다.
-argument-hint: [브랜치 ...] (비우면 push 대기 브랜치 전체)
+argument-hint: "[브랜치 ...] (비우면 push 대기 브랜치 전체)"
 disable-model-invocation: true
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: codex-review
 description: 작업 브랜치의 커밋을 push 전에 Codex CLI(codex exec review)로 main 대비 코드 리뷰한다.
-argument-hint: [브랜치, 기본 현재 브랜치]
+argument-hint: "[브랜치, 기본 현재 브랜치]"
 ---
 
 # push 전 Codex 코드 리뷰
