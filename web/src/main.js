@@ -10,6 +10,15 @@ let lastSheet = null;
 let sheetTrigger = null;
 let preserveRouteUi = false;
 
+function isModalSheet(sheet) {
+  return sheet === 'copy' || sheet === 'delete';
+}
+
+function modalControls(modal) {
+  return [...(modal?.querySelectorAll('a[href], button, input, select, textarea, [tabindex]') ?? [])]
+    .filter((element) => !element.disabled && element.tabIndex >= 0 && !element.closest('[inert], [hidden]'));
+}
+
 function render() {
   const destination = store.getState().ui.navigateTo;
   if (destination) {
@@ -33,9 +42,11 @@ function render() {
     ? [focused.selectionStart, focused.selectionEnd] : null;
   const hadSheet = lastSheet;
   app.innerHTML = renderRoute(state, window.location.hash) +
+    (isModalSheet(state.ui.sheet) ? '<div inert>' : '') +
     (state.ui.notice && !state.ui.sheet ? '<div class="toast" role="status">' + html`<span>${state.ui.notice}</span>` +
       (state.ui.undo ? html`<button type="button" data-action="${state.ui.undo.action}" data-id="${state.ui.undo.id}">되돌리기</button>` : '') + '</div>' : '') +
-    '<a class="catalog-access" href="#/catalog">화면 카탈로그</a>';
+    '<a class="catalog-access" href="#/catalog">화면 카탈로그</a>' +
+    (isModalSheet(state.ui.sheet) ? '</div>' : '');
   lastSheet = state.ui.sheet;
   if (focusedId) {
     const replacement = document.getElementById(focusedId);
@@ -52,7 +63,10 @@ function render() {
       candidates.find((element) => element.dataset.action === sheetTrigger.action && element.dataset.id === sheetTrigger.id)?.focus();
     }
   }
-  if (state.ui.sheet === 'delete' && hadSheet !== 'delete') app.querySelector?.('[data-autofocus]')?.focus();
+  if (isModalSheet(state.ui.sheet) && hadSheet !== state.ui.sheet) {
+    const modal = app.querySelector?.('[aria-modal="true"]');
+    (app.querySelector?.('[data-autofocus]') ?? modalControls(modal)[0])?.focus();
+  }
   if (state.ui.scrollTarget) {
     document.getElementById(state.ui.scrollTarget)?.scrollIntoView();
     store.dispatch('clear-scroll');
@@ -126,6 +140,18 @@ app.addEventListener('submit', (event) => {
 });
 
 app.addEventListener('keydown', (event) => {
+  if (event.key === 'Tab' && isModalSheet(store.getState().ui.sheet)) {
+    const modal = app.querySelector('[aria-modal="true"]');
+    if (!modal) return;
+    const controls = modalControls(modal);
+    const first = controls[0];
+    const last = controls.at(-1);
+    if (!first) { event.preventDefault(); return; }
+    if (!controls.includes(document.activeElement) || document.activeElement === (event.shiftKey ? first : last)) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    }
+  }
   if (event.key === 'Escape' && store.getState().ui.sheet) {
     event.preventDefault();
     act('close-sheet');
