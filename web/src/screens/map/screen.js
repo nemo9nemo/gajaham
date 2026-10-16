@@ -1,12 +1,13 @@
 import { html } from '../../html.js';
 import { userName, userInitial } from '../../data/mock.js';
 import { visibleMaps } from '../../logic/maps.js';
-import { filterPlaces, pinnable, unconfirmed } from '../../logic/places.js';
+import { activePlaces, filterPlaces, pinnable, unconfirmed } from '../../logic/places.js';
 import { button } from '../../components/button.js';
 import { mapBadge } from '../../components/map-badge.js';
 import { chip } from '../../components/chip.js';
 import { tabBar } from '../../components/tab-bar.js';
 import { notice } from '../../components/notice.js';
+import { copySheet } from '../copy/sheet.js';
 
 function mapHeader(state, map, maps, showTools, noResults) {
   const switcher = maps.some((item) => item.type === 'shared');
@@ -64,14 +65,14 @@ function emptyMap(state, map) {
     (map.type === 'personal' ? '<h2>아직 저장한 장소가 없어요</h2><p class="muted">인스타그램에서 본 게시물·릴스를 서비스 계정에 DM으로 보내거나, 링크를 붙여 넣어 저장해요.</p>' +
       button('링크 등록', { href: '#/todo/UI-03/3-1' }) + button('DM으로 보내는 방법', { href: '#/todo/UI-03/3-1', variant: 'secondary' }) :
       '<h2>공유 맵에 아직 장소가 없어요</h2><p class="muted">내 개인 맵에서 함께 볼 장소를 골라 복제하거나, 새 링크를 공유 맵에 등록해요.</p>' +
-      button('내 개인 맵에서 복제', { href: '#/todo/UI-02/2-2' }) + button('공유 맵에 링크 등록', { href: '#/todo/UI-03/3-2', variant: 'secondary' }) +
+      button('내 개인 맵에서 복제', { action: 'copy-select-start', href: '#/copy/select' }) + button('공유 맵에 링크 등록', { href: '#/todo/UI-03/3-2', variant: 'secondary' }) +
       html`<p class="caption">공유 맵에 넣은 장소는 ${map.memberIds.map((id) => userName(state, id)).join(', ')}에게 보여요.</p>`) + '</section>';
 }
 
 function mapDropdown(state, maps) {
   return '<section id="map-switcher" class="map-dropdown" aria-label="맵 전환"><div class="dropdown-heading"><h2>맵 전환</h2>' +
     '<button type="button" class="close-control" data-action="close-sheet" aria-label="맵 전환 닫기">×</button></div>' + maps.map((map) => {
-    const count = state.places.filter((place) => place.mapId === map.id).length;
+    const count = activePlaces(state, map.id).length;
     return html`<button type="button" class="map-option ${map.id === state.currentMapId ? 'current' : ''}" data-action="switch-map" data-id="${map.id}" aria-current="${map.id === state.currentMapId ? 'true' : 'false'}">` +
       mapBadge(map.type) + html`<span class="map-option-body"><strong>${map.name}</strong>` +
       (map.id === state.currentMapId ? '<span class="current-map">지금 보는 맵</span>' : '') +
@@ -88,14 +89,14 @@ function placeSummary(state, map, places) {
     html`<div class="thumb summary-thumb">${place.hasImage ? '이미지 자리' : '이미지 없음'}</div><div class="summary-copy"><h2>${place.name}</h2>` +
     html`<p class="caption">${place.category} · ${place.region} · ${place.locationStatus === 'confirmed' ? '위치 확인됨' : '위치 미확정 · 지도에 표시 안 됨'}</p><p class="caption">${place.summary}</p></div></div>` +
     (map.type === 'shared' ? html`<p class="caption">보낸 사람 ${userInitial(state, place.senderId)}${place.visit === 'want' ? ` · 가고 싶어: ${place.wantBy.map((id) => userInitial(state, id)).join(', ')}` : place.visit === 'visited' ? ' · 다녀왔어요' : ''}</p>` : '') +
-    (state.ui.notice ? notice(state.ui.notice) : '') + '<div class="button-row">' + button('자세히', { href: '#/todo/UI-02/6-1' }) + button('원본', { action: 'source', id: place.id, variant: 'secondary' }) + '</div></section>';
+    (state.ui.notice ? notice(state.ui.notice) : '') + '<div class="button-row">' + button('자세히', { href: `#/place/${encodeURIComponent(place.id)}` }) + button('원본', { action: 'source', id: place.id, variant: 'secondary' }) + '</div></section>';
 }
 
 export function mapScreen(state) {
   const maps = visibleMaps(state);
   const map = maps.find((item) => item.id === state.currentMapId) ?? maps[0];
   if (!map) return '<main class="page">접근할 수 있는 맵이 없어요.</main>';
-  const allPlaces = state.places.filter((place) => place.mapId === map.id);
+  const allPlaces = activePlaces(state, map.id);
   const places = filterPlaces(allPlaces, {
     category: state.ui.category, query: state.ui.query,
     visit: state.ui.view === 'list' ? state.ui.visit : '',
@@ -121,12 +122,13 @@ export function mapScreen(state) {
       (state.ui.sheet === 'place' ? placeSummary(state, map, allPlaces) : '') + '</div>';
   }
   if (state.ui.view === 'list' && places.length) content += '<div class="selection-actions">' +
-    button('선택해서 복제', { href: '#/todo/UI-02/2-4', variant: 'secondary', disabled: !state.ui.selectedIds.length }) +
-    button('전체 복제', { href: '#/todo/UI-02/2-4', variant: 'secondary' }) + '</div>';
+    button('선택해서 복제', { action: 'open-copy', id: 'selected', variant: 'secondary', disabled: !state.ui.selectedIds.length }) +
+    button('전체 복제', { action: 'open-copy', id: 'all', variant: 'secondary' }) + '</div>';
   // List/error rows can also open the same nonmodal summary without hiding their controls.
   if (state.ui.sheet === 'place' && (state.ui.view === 'list' || state.ui.mapError)) content += placeSummary(state, map, allPlaces);
-  return '<div class="map-page">' + mapHeader(state, map, maps, !!allPlaces.length && !state.ui.mapError, !places.length) +
+  return (state.ui.sheet === 'copy' ? '<div inert>' : '') + '<div class="map-page">' + mapHeader(state, map, maps, !!allPlaces.length && !state.ui.mapError, !places.length) +
     '<main class="map-content' + (state.ui.view === 'list' ? ' list-content' : '') + '">' + content + '</main>' +
     (state.ui.sheet === 'maps' ? '<button type="button" class="map-switch-scrim" data-action="close-sheet" aria-label="맵 전환 닫기"></button>' : '') +
-    (!state.ui.sheet && places.length && !state.ui.mapError && !state.ui.selectionMode ? button('+ 링크 등록', { href: '#/todo/UI-03/3-1', variant: 'floating' }) : '') + tabBar() + '</div>';
+    (!state.ui.sheet && places.length && !state.ui.mapError && !state.ui.selectionMode ? button('+ 링크 등록', { href: '#/todo/UI-03/3-1', variant: 'floating' }) : '') + tabBar() + '</div>' +
+    (state.ui.sheet === 'copy' ? '</div>' + copySheet({ ...state, currentMapId: map.id }) : '');
 }

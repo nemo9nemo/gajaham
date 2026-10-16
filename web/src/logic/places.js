@@ -12,3 +12,5 @@ export function filterPlaces(places, { category, query, visit, senderId } = {}) 
 
 export const pinnable = (places) => places.filter((place) => place.locationStatus === 'confirmed' && place.pin);
 export const unconfirmed = (places) => places.filter((place) => place.locationStatus === 'unconfirmed');
+
+export const activePlaces = (state, mapId) => state.places.filter((place) => place.mapId === mapId && !place.trashed);
