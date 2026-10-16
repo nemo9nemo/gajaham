@@ -182,11 +182,11 @@ test('초기 복제·전체 확인·시트·권한 실패·편집·삭제·되�
   assert.match(renderRoute(store.getState(), '#/map?view=list'), /복제할 다른 맵이 없어요/);
 });
 
-test('실제 main 이벤트로 화면 이동·메모 한글 조합·삭제 포커스·되돌리기·하단 스크롤을 처리한다', async () => {
+test('실제 main 이벤트로 화면 이동·메모 조합·모달 포커스 순환·되돌리기·스크롤을 처리한다', async () => {
   const keys = ['document', 'window', 'HTMLInputElement'];
   const previous = keys.map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]);
   const listeners = {}, windowListeners = {};
-  let controls = [], markup = '', hash = '#/catalog', pending = false, renders = 0, scrolled = 0;
+  let controls = [], nodes = [], markup = '', hash = '#/catalog', pending = false, renders = 0, scrolled = 0;
   const decode = (text) => text.replace(/&(?:amp|lt|gt|quot|#39);/g, (value) => ({ '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'" })[value]);
   class Input {}
   const doc = { activeElement: null, getElementById(id) {
@@ -194,26 +194,51 @@ test('실제 main 이벤트로 화면 이동·메모 한글 조합·삭제 포�
   } };
   const app = {
     addEventListener(type, listener) { listeners[type] = listener; },
-    querySelectorAll() { return controls.filter((element) => element.dataset.action); },
-    querySelector(selector) { return selector === '[data-autofocus]' ? controls.find((element) => element.autofocus) : null; },
+    querySelectorAll(selector) { return nodes.filter((element) => element.matches(selector)); },
+    querySelector(selector) { return this.querySelectorAll(selector)[0] ?? null; },
     set innerHTML(value) {
       renders += 1; markup = value; doc.activeElement = null;
-      controls = [...value.matchAll(/<(button|a|input|textarea)\b([^>]*)>(?:([^<]*)<\/textarea>)?/g)].map(([, tag, attrs, body]) => {
+      controls = []; nodes = [];
+      const parents = [];
+      for (const match of value.matchAll(/<\/?([a-z][\w-]*)\b([^>]*)>/gi)) {
+        const [, tag, attrs] = match;
+        if (match[0].startsWith('</')) { parents.pop(); continue; }
         const attribute = (name) => new RegExp(`(?:^|\\s)${name}="([^"]*)"`).exec(attrs)?.[1];
+        const hasAttribute = (name) => new RegExp(`(?:^|\\s)${name}(?=\\s|=|$)`).test(attrs);
+        const body = tag === 'textarea' ? value.slice(match.index + match[0].length).split('</textarea>')[0] : '';
         const element = Object.assign(tag === 'input' ? new Input() : {}, {
           tagName: tag.toUpperCase(), id: attribute('id'), type: attribute('type') ?? 'text',
+          parentElement: parents.at(-1), disabled: hasAttribute('disabled'),
+          tabIndex: hasAttribute('tabindex') ? Number(attribute('tabindex')) : /^(button|input|textarea|select)$/.test(tag) || (tag === 'a' && hasAttribute('href')) ? 0 : -1,
           value: decode(tag === 'textarea' ? body ?? '' : attribute('value') ?? ''),
           dataset: { action: attribute('data-action'), id: decode(attribute('data-id') ?? ''), field: attribute('data-field') },
           autofocus: /\sdata-autofocus(?:\s|$)/.test(attrs),
           checked: /\schecked(?:\s|$)/.test(attrs),
-          getAttribute: attribute,
-          focus() { doc.activeElement = element; }, closest() { return element; },
+          getAttribute: attribute, hasAttribute,
+          focus() { if (!element.disabled && !element.closest('[inert], [hidden]')) doc.activeElement = element; },
+          closest(selector) {
+            for (let node = element; node; node = node.parentElement) if (node.matches(selector)) return node;
+            return null;
+          },
+          contains(other) {
+            for (let node = other; node; node = node.parentElement) if (node === element) return true;
+            return false;
+          },
+          querySelectorAll(selector) { return nodes.filter((node) => node !== element && element.contains(node) && node.matches(selector)); },
           setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; },
-          matches(selector) { return selector === 'input[data-action]' ? tag === 'input' && !!attribute('data-action')
-            : tag === 'input' || (tag === 'button' && attribute('type') === 'submit'); },
+          matches(selector) {
+            return selector.split(',').some((part) => {
+              const tagName = part.trim().match(/^[a-z]+/i)?.[0];
+              const className = part.match(/\.([\w-]+)/)?.[1];
+              return (!tagName || tagName === tag) && (!className || (attribute('class') ?? '').split(/\s+/).includes(className)) &&
+                [...part.matchAll(/\[([\w-]+)(?:="([^"]*)")?\]/g)].every(([, name, expected]) => expected === undefined ? hasAttribute(name) : attribute(name) === expected);
+            });
+          },
         });
-        return element;
-      });
+        nodes.push(element);
+        if (/^(button|a|input|textarea|select)$/.test(tag)) controls.push(element);
+        if (!/^(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/.test(tag)) parents.push(element);
+      }
     },
   };
   doc.querySelector = () => app;
@@ -235,6 +260,33 @@ test('실제 main 이벤트로 화면 이동·메모 한글 조합·삭제 포�
     listeners.click({ target, preventDefault() {} }); flush();
   }
   function preset(id) { win.location.hash = '#/catalog'; flush(); click('catalog', id); }
+  function key(key, shiftKey = false) {
+    let prevented = false;
+    listeners.keydown({ key, shiftKey, preventDefault() { prevented = true; } });
+    return prevented;
+  }
+  function checkModalFocus(role, firstAction, lastAction) {
+    const modal = app.querySelector(`[role="${role}"]`);
+    assert.ok(modal);
+    const catalog = app.querySelector('.catalog-access');
+    assert.ok(catalog.closest('[inert]'), '카탈로그 링크도 inert 영역에 포함된다');
+    for (const element of controls) {
+      if (!modal.contains(element) && element.tabIndex >= 0) assert.ok(element.closest('[inert]'), '모달 밖 컨트롤은 inert여야 한다');
+    }
+    const first = modal.querySelectorAll('[data-action]').find((element) => element.dataset.action === firstAction);
+    const last = modal.querySelectorAll('[data-action]').find((element) => element.dataset.action === lastAction);
+    assert.ok(first);
+    assert.ok(last);
+    assert.equal(doc.activeElement, first, 'data-autofocus 또는 모달의 첫 컨트롤에 포커스한다');
+    catalog.focus();
+    assert.equal(doc.activeElement, first, 'inert 배경에는 포커스할 수 없다');
+    assert.equal(key('Tab'), false, '모달 중간의 기본 Tab 이동은 유지한다');
+    assert.equal(key('Tab', true), true);
+    assert.equal(doc.activeElement, last, '첫 요소의 Shift+Tab은 마지막 요소로 순환한다');
+    assert.equal(key('Tab', true), false, '모달 중간의 기본 Shift+Tab 이동은 유지한다');
+    assert.equal(key('Tab'), true);
+    assert.equal(doc.activeElement, first, '마지막 요소의 Tab은 첫 요소로 순환한다');
+  }
   Object.assign(globalThis, { document: doc, window: win, HTMLInputElement: Input });
   try {
     await import('../src/main.js?ui02-interactions');
@@ -281,8 +333,11 @@ test('실제 main 이벤트로 화면 이동·메모 한글 조합·삭제 포�
     assert.match(markup, /class="toast" role="status"><span>저장했어요/);
     click('open-delete', 'shared-cafe');
     assert.equal(doc.activeElement.dataset.action, 'confirm-delete');
+    checkModalFocus('alertdialog', 'confirm-delete', 'close-sheet');
     listeners.keydown({ key: 'Escape', preventDefault() {} });
     assert.doesNotMatch(markup, /role="alertdialog"/);
+    assert.equal(doc.activeElement, control('open-delete', 'shared-cafe'));
+    assert.equal(app.querySelector('.catalog-access').closest('[inert]'), null);
     click('open-delete', 'shared-cafe');
     click('confirm-delete', 'shared-cafe');
     assert.equal(hash, '#/map');
@@ -300,11 +355,35 @@ test('실제 main 이벤트로 화면 이동·메모 한글 조합·삭제 포�
 
     preset('2-3');
     assert.match(markup, /role="dialog"/);
+    checkModalFocus('dialog', 'close-sheet', 'copy-sheet-preview');
+    click('copy-scope', 'all');
+    assert.equal(doc.activeElement, control('copy-scope', 'all'), '모달 내부 재렌더 후 포커스를 보존한다');
+    assert.equal(key('Escape'), true);
+    assert.equal(app.querySelector('[aria-modal="true"]'), null);
+    assert.equal(app.querySelector('.catalog-access').closest('[inert]'), null);
+    click('open-copy', 'selected');
+    checkModalFocus('dialog', 'close-sheet', 'copy-sheet-preview');
+    click('close-sheet');
+    assert.equal(doc.activeElement, control('open-copy', 'selected'));
+    click('open-copy', 'selected');
+    assert.equal(key('Escape'), true);
+    assert.equal(doc.activeElement, control('open-copy', 'selected'));
+    click('open-copy', 'selected');
     click('copy-sheet-preview');
     assert.equal(hash, '#/copy/preview');
     assert.match(markup, /2곳 복제하기/);
     preset('6-6');
     assert.equal(doc.activeElement.dataset.action, 'confirm-delete');
+    checkModalFocus('alertdialog', 'confirm-delete', 'close-sheet');
+    click('close-sheet');
+    click('open-delete', 'shared-soup');
+    checkModalFocus('alertdialog', 'confirm-delete', 'close-sheet');
+    click('close-sheet');
+    assert.equal(doc.activeElement, control('open-delete', 'shared-soup'));
+    click('open-copy', 'one:shared-soup');
+    checkModalFocus('dialog', 'close-sheet', 'copy-sheet-preview');
+    assert.equal(key('Escape'), true);
+    assert.equal(doc.activeElement, control('open-copy', 'one:shared-soup'));
     preset('6-5');
     click('save-location', 'pb-bakery');
     assert.equal(hash, '#/place/pb-bakery');
