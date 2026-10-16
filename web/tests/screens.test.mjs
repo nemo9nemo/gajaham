@@ -80,6 +80,33 @@ test('공유 결과·상세·이력은 비공개 원본 맵 이름과 ID를 표�
   for (const file of files) assert.ok(!readFileSync(new URL(`../src/${file.replaceAll('\\', '/')}`, import.meta.url), 'utf8').includes('todo/UI-02'), file);
 });
 
+test('미리보기 왕복의 close-sheet는 선택과 두 체크박스의 체크 상태를 보존한다', () => {
+  const store = createStore(createScenario('copy-initial'));
+  const ids = ['pb-soup', 'pb-bakery'];
+  for (const id of ids) store.dispatch('copy-pick', id);
+  store.dispatch('copy-pick-preview');
+  store.dispatch('clear-navigate');
+  store.dispatch('close-sheet');
+  assert.match(renderRoute(store.getState(), '#/copy/preview'), /href="#\/copy\/select"/);
+  store.dispatch('close-sheet');
+  assert.deepEqual(store.getState().ui.copyPick, ids);
+  const markup = renderRoute(store.getState(), '#/copy/select');
+  for (const id of ids) assert.ok(markup.includes(`data-action="copy-pick" data-id="${id}" checked`));
+  assert.match(markup, /2곳 미리보기/);
+});
+
+test('시트 직접 닫기·맵 전환·복제 완료·새 복제 시작은 선택을 초기화한다', () => {
+  for (const action of ['close-sheet', 'switch-map', 'show-map', 'copy-done', 'copy-initial-next', 'copy-select-start']) {
+    const store = createStore(createScenario('copy-initial'));
+    for (const id of ['pb-soup', 'pb-bakery']) store.dispatch('copy-pick', id);
+    store.dispatch('copy-pick-preview');
+    if (action === 'close-sheet') store.dispatch('open-copy', 'selected');
+    if (action === 'copy-done') store.dispatch('copy-execute');
+    store.dispatch(action, 'personal-b');
+    assert.deepEqual(store.getState().ui.copyPick, [], action);
+  }
+});
+
 test('초기 복제·전체 확인·시트·권한 실패·편집·삭제·되돌리기 액션이 화면으로 이어진다', () => {
   const store = createStore(createScenario('copy-initial'));
   assert.match(renderRoute(store.getState(), '#/connected'), /href="#\/copy\/initial"/);
@@ -214,10 +241,21 @@ test('실제 main 이벤트로 화면 이동·메모 한글 조합·삭제 포�
     preset('2-1');
     click('copy-initial-next');
     assert.equal(hash, '#/copy/select');
-    const pick = control('copy-pick', 'pb-soup');
-    listeners.input({ target: pick }); flush();
+    for (const id of ['pb-soup', 'pb-bakery']) {
+      listeners.input({ target: control('copy-pick', id) }); flush();
+    }
     click('copy-pick-preview');
     assert.equal(hash, '#/copy/preview');
+    for (const back of ['link', 'history']) {
+      win.location.hash = back === 'link'
+        ? controls.find((element) => element.tagName === 'A' && element.getAttribute('href') === '#/copy/select').getAttribute('href')
+        : '#/copy/select';
+      flush();
+      for (const id of ['pb-soup', 'pb-bakery']) assert.equal(control('copy-pick', id).checked, true, back);
+      assert.match(markup, /2곳 미리보기/);
+      click('copy-pick-preview');
+      assert.equal(hash, '#/copy/preview');
+    }
     click('copy-execute');
     assert.equal(hash, '#/copy/result');
     click('copy-done');

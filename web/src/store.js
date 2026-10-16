@@ -68,7 +68,9 @@ function reduceDomainAction(state, action, value) {
       return shared ? updateUi(switchMap(state, shared.id), { sheet: null, query: '', category: '전체', visit: '', senderId: '' }) : state;
     }
     case 'open-maps': return updateUi(state, { sheet: state.ui.sheet === 'maps' ? null : 'maps', selectedPlaceId: null });
-    case 'close-sheet': return updateUi(state, { ...resetTransient, sheet: null, selectedPlaceId: null });
+    case 'close-sheet': return updateUi(state, {
+      ...resetTransient, copyPick: state.ui.sheet ? [] : state.ui.copyPick, sheet: null, selectedPlaceId: null,
+    });
     case 'switch-map': {
       const next = switchMap(state, value);
       return next === state ? state : updateUi(next, {
