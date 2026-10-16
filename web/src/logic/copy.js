@@ -48,6 +48,15 @@ function copiedPlace(source, targetMapId, id, extras, userId, direction) {
   };
 }
 
+function copyLineage(places, id) {
+  const visited = new Set();
+  while (id && !visited.has(id)) {
+    visited.add(id);
+    id = places.find((place) => place.id === id)?.copyOf;
+  }
+  return visited;
+}
+
 export function executeCopy(state, draft, userId = state.currentUserId) {
   const checked = buildCopyDraft(state, draft ?? {}, userId);
   if (!checked.ok) return { ...checked, state };
@@ -58,8 +67,10 @@ export function executeCopy(state, draft, userId = state.currentUserId) {
     const source = state.places.find((place) => place.id === sourceId);
     const item = { sourceId, name: source.name, unconfirmed: source.locationStatus !== 'confirmed', targetPlaceId: null };
     if (state.mock?.copyFailIds.includes(sourceId)) return { ...item, outcome: 'failed' };
+    const sourceLineage = copyLineage(places, sourceId);
     const target = places.find((place) => place.mapId === draft.targetMapId && !place.trashed &&
-      ((source.locationStatus === 'confirmed' && source.placeKey && place.locationStatus === 'confirmed' && place.placeKey === source.placeKey) || place.copyOf === sourceId));
+      ((source.locationStatus === 'confirmed' && source.placeKey && place.locationStatus === 'confirmed' && place.placeKey === source.placeKey) ||
+        [...copyLineage(places, place.id)].some((id) => sourceLineage.has(id))));
     if (target) {
       const sources = source.sources.filter((entry) => !target.sources.some((existing) => existing.id === entry.id));
       if (sources.length) places = places.map((place) => place.id === target.id ? {

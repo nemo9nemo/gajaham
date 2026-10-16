@@ -88,6 +88,77 @@ test('같은 지점은 출처만 합치며 기존 정보와 기록을 덮어쓰�
   assert.equal(again.state.places.length, state.places.length);
 });
 
+test('미확정 장소를 여러 번 왕복 복제해도 원본과 두 맵의 장소 수를 유지한다', () => {
+  let state = createScenario('copy-initial');
+  Object.assign(placeById(state, 'pb-bakery'), { edits: { memo: 'user-b' }, visit: 'visited' });
+  const original = structuredClone(placeById(state, 'pb-bakery'));
+  const first = executeCopy(state, draftFor(state, ['pb-bakery']).draft);
+  assert.equal(first.result.items[0].outcome, 'new');
+  state = first.state;
+  const sharedId = first.result.items[0].targetPlaceId;
+  const shared = structuredClone(placeById(state, sharedId));
+  const counts = ['personal-b', 'shared-ab'].map((id) => activePlaces(state, id).length);
+  for (let round = 0; round < 5; round += 1) {
+    const back = executeCopy(state, buildCopyDraft(state, {
+      sourceMapId: 'shared-ab', targetMapId: 'personal-b', placeIds: [sharedId],
+    }).draft);
+    assert.equal(back.result.items[0].outcome, 'unchanged');
+    assert.equal(back.result.items[0].targetPlaceId, original.id);
+    assert.deepEqual(placeById(back.state, original.id), original);
+    assert.deepEqual(['personal-b', 'shared-ab'].map((id) => activePlaces(back.state, id).length), counts);
+    const forward = executeCopy(back.state, draftFor(back.state, ['pb-bakery']).draft);
+    assert.equal(forward.result.items[0].outcome, 'unchanged');
+    assert.equal(forward.result.items[0].targetPlaceId, sharedId);
+    assert.deepEqual(placeById(forward.state, sharedId), shared);
+    assert.deepEqual(['personal-b', 'shared-ab'].map((id) => activePlaces(forward.state, id).length), counts);
+    state = forward.state;
+  }
+});
+
+test('복제 체인의 조상·후손·공통 뿌리는 출처만 추가하고 대상 기록을 보존한다', () => {
+  for (const [sourceParent, targetParent, links] of [
+    ['bakery-middle', null, [['bakery-middle', 'pb-bakery']]],
+    [null, 'bakery-middle', [['bakery-middle', 'shared-bakery']]],
+    ['source-middle', 'target-middle', [['source-middle', 'bakery-root'], ['target-middle', 'bakery-root']]],
+    ['cycle-a', 'cycle-b', [['cycle-a', 'cycle-b'], ['cycle-b', 'cycle-a']]],
+  ]) {
+    const state = createScenario('connected');
+    const source = placeById(state, 'shared-bakery');
+    const target = placeById(state, 'pb-bakery');
+    source.copyOf = sourceParent;
+    Object.assign(target, { copyOf: targetParent, edits: { memo: 'user-b' }, visit: 'visited' });
+    state.places.push(...links.map(([id, copyOf]) => ({ ...structuredClone(source), id, copyOf, trashed: true })));
+    const before = structuredClone(state);
+    const oldTarget = structuredClone(target);
+    const draft = buildCopyDraft(state, { sourceMapId: 'shared-ab', targetMapId: 'personal-b', placeIds: [source.id] }).draft;
+    draft.extras = { memo: true, photos: true };
+    const result = executeCopy(state, draft);
+    assert.equal(result.result.items[0].outcome, 'source-added');
+    assert.equal(result.result.items[0].targetPlaceId, target.id);
+    assert.equal(result.state.places.length, state.places.length);
+    assert.deepEqual(placeById(result.state, target.id), {
+      ...oldTarget, sources: [...oldTarget.sources, ...source.sources],
+      history: [...oldTarget.history, { type: 'source-added', actorId: 'user-b', at: '[날짜]' }],
+    });
+    const again = executeCopy(result.state, draft);
+    assert.equal(again.result.items[0].outcome, 'unchanged');
+    assert.deepEqual(again.state.places, result.state.places);
+    assert.deepEqual(state, before);
+  }
+});
+
+test('서로 다른 순환 복제 체인은 같은 장소로 합치지 않는다', () => {
+  const state = createScenario('connected');
+  placeById(state, 'pb-bakery').copyOf = 'personal-cycle';
+  placeById(state, 'shared-bakery').copyOf = 'shared-cycle';
+  state.places.push(...[
+    ['personal-cycle', 'pb-bakery'], ['shared-cycle', 'shared-bakery'],
+  ].map(([id, copyOf]) => ({ ...structuredClone(placeById(state, 'pb-bakery')), id, copyOf, trashed: true })));
+  const result = executeCopy(state, draftFor(state, ['pb-bakery']).draft);
+  assert.equal(result.result.items[0].outcome, 'new');
+  assert.equal(result.state.places.length, state.places.length + 1);
+});
+
 test('일부 실패 결과는 순서를 유지하고 재시도는 실패한 장소만 처리한다', () => {
   const state = createScenario('copy-partial');
   const before = structuredClone(state);
