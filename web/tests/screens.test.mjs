@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
 import { once } from 'node:events';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { CATALOG, catalogState } from '../src/screens/catalog.js';
 import { parseRoute, renderRoute } from '../src/router.js';
 import { SCENARIOS, createScenario } from '../src/data/scenarios.js';
@@ -20,6 +20,13 @@ const EXPECTED = {
   '1-7': ['연결 코드', '사용자 A', '이 사람과 공유 맵을 만들까요?', '연결하기'],
   '1-8': ['연결됐어요', '그대로 유지', '새로 생김', 'DM 기본 저장 위치는 그대로 ‘개인 맵’이에요.'],
   '1-9': ['이미 공유 맵에 참여 중', '이미 함께 쓰는 공유 맵이 있어요', '지금 공유 맵 보기'],
+  '2-1': ['지금 복제 안 함', '선택한 장소 복제', '전체 장소 복제'],
+  '2-2': ['미확정 상태로 복제돼요', '내 메모 있음', '3곳 미리보기'],
+  '2-3': ['다른 맵에 복제', '선택한 2곳', '이 맵의 전체 장소 4곳'],
+  '2-4': ['개인 추가 정보 · 기본 해제', '내 메모', '직접 올린 사진', '내 방문 기록'],
+  '2-5': ['가져오지 않음: 관심 표시 · 이번 약속 · 상대방 평가', '나만', '사용자 A 작성'],
+  '2-6': ['일부 완료 · 4곳 중 3곳', '출처 추가', '실패한 1곳만 다시 복제'],
+  '2-7': ['복제한 사람: 사용자 B', '원래 맵 이름은 표시하지 않아요'],
   '4-1': ['내 개인 맵', '함께 쓰기', '위치 미확정 1곳', '+ 링크 등록'],
   '4-2': ['우리 공유 맵', '이미지 없음', '테라스 분위기와 피스타치오 음료', '보낸 사람 A · 가고 싶어: A'],
   '4-3': ['맵 전환', '장소 4곳', '지금 보는 맵', 'DM 기본 저장 위치는 바뀌지 않아요.'],
@@ -28,7 +35,249 @@ const EXPECTED = {
   '4-6': ['공유 맵에 아직 장소가 없어요', '내 개인 맵에서 복제', '사용자 A, 사용자 B에게 보여요.'],
   '4-7': ['연남 파스타', '맞는 장소가 없어요', '검색어 지우기', '메뉴·메모 내용은 검색되지 않아요.'],
   '4-8': ['지도를 불러오지 못했어요', '목록과 원본 링크는 그대로 이용할 수 있어요.', '다시 시도', '원본'],
+  '6-1': ['게시물 추천 메뉴', '자동 추출', '우리 메모', '작성: 사용자 A'],
+  '6-2': ['참고 글 2개', '이 맵에서 삭제', '기록 전체 보기'],
+  '6-3': ['원문에 접근할 수 없어요', '자동 추출 · 저장 당시', '위치 직접 정하기'],
+  '6-4': ['직접 수정됨 · 사용자 B', 'data-field="memoText"', '<textarea'],
+  '6-5': ['이 위치로 저장', '여기로 옮기기'],
+  '6-6': ['우리 공유 맵에서 삭제할까요?', 'role="alertdialog"', 'data-autofocus'],
 };
+
+test('복제 미리보기는 추가 정보가 모두 해제되고 직접 진입·접근 실패를 안전하게 표시한다', () => {
+  const preview = CATALOG.find((entry) => entry.id === '2-4');
+  const markup = renderRoute(catalogState(preview), preview.route);
+  assert.equal([...markup.matchAll(/type="checkbox"/g)].length, 3);
+  assert.doesNotMatch(markup, /\schecked(?:\s|>)/);
+  for (const route of ['#/copy/preview', '#/copy/result']) assert.match(renderRoute(createScenario('connected'), route), /복제할 장소를 먼저 골라 주세요/);
+  for (const suffix of ['', '/edit', '/location', '/history']) {
+    const route = `#/place/pa-book${suffix}`;
+    const denied = renderRoute(createScenario('connected'), route);
+    assert.match(denied, /이 장소를 볼 수 없어요/);
+    assert.doesNotMatch(denied, /pa-book|예시 개인 서점|personal-a/);
+    const loggedOut = createScenario();
+    assert.match(renderRoute(loggedOut, `#/place/shared-cafe${suffix}`), /로그인 후/);
+  }
+  for (const route of ['#/copy/initial', '#/copy/select', '#/copy/preview', '#/copy/result']) assert.match(renderRoute(createScenario(), route), /로그인 후/);
+  assert.deepEqual(parseRoute('#/place/%ED%95%9C%EA%B8%80%20id/edit'), { path: '/place/:id/edit', params: { id: '한글 id' } });
+  assert.equal(parseRoute('#/place/%ZZ').path, '/start');
+  assert.equal(parseRoute('#/place/a/bogus').path, '/start');
+});
+
+test('공유 결과·상세·이력은 비공개 원본 맵 이름과 ID를 표시하지 않는다', () => {
+  for (const id of ['2-6', '2-7', '6-1', '6-2', '6-4', '6-6']) {
+    const entry = CATALOG.find((item) => item.id === id);
+    assert.doesNotMatch(renderRoute(catalogState(entry), entry.route), /내 개인 맵|personal-b/);
+  }
+  let state = reduceAction(createScenario('copy-preview'), 'copy-execute');
+  const copiedId = state.copy.result.items.find((item) => item.outcome === 'new').targetPlaceId;
+  state = { ...state, currentUserId: 'user-a' };
+  for (const suffix of ['', '/history']) {
+    const markup = renderRoute(state, `#/place/${copiedId}${suffix}`);
+    assert.match(markup, /복제한 사람: 사용자 B/);
+    assert.doesNotMatch(markup, /내 개인 맵|personal-b|테라스 자리 먼저 보기|오전에 가기/);
+  }
+  const files = readdirSync(new URL('../src/', import.meta.url), { recursive: true }).filter((file) => file.endsWith('.js'));
+  for (const file of files) assert.ok(!readFileSync(new URL(`../src/${file.replaceAll('\\', '/')}`, import.meta.url), 'utf8').includes('todo/UI-02'), file);
+});
+
+test('초기 복제·전체 확인·시트·권한 실패·편집·삭제·되돌리기 액션이 화면으로 이어진다', () => {
+  const store = createStore(createScenario('copy-initial'));
+  assert.match(renderRoute(store.getState(), '#/connected'), /href="#\/copy\/initial"/);
+  store.dispatch('copy-initial-next');
+  assert.equal(store.getState().ui.navigateTo, '#/copy/select');
+  for (const id of ['pb-cafe', 'pb-soup', 'pb-bakery']) store.dispatch('copy-pick', id);
+  store.dispatch('copy-pick', 'pa-book');
+  assert.equal(store.getState().ui.copyPick.length, 3);
+  store.dispatch('copy-pick-preview');
+  assert.equal(store.getState().copy.draft.back, '#/copy/select');
+  store.dispatch('copy-execute');
+  assert.equal(store.getState().ui.navigateTo, '#/copy/result');
+  store.dispatch('copy-done');
+  assert.equal(store.getState().currentMapId, 'shared-ab');
+  assert.equal(store.getState().copy.draft, null);
+  assert.equal(store.getState().copy.result, null);
+  assert.match(renderRoute(store.getState(), '#/map?view=list'), /예시 베이커리/);
+
+  store.applyScenario('copy-initial');
+  store.dispatch('copy-choice', 'all');
+  store.dispatch('copy-initial-next');
+  assert.equal(store.getState().ui.navigateTo, '#/copy/preview');
+  assert.equal(store.getState().copy.draft.back, '#/copy/initial');
+  assert.equal(store.getState().copy.draft.placeIds.length, 4);
+  assert.deepEqual(store.getState().copy.draft.extras, { memo: false, photos: false, visits: false });
+  const revoked = structuredClone(store.getState());
+  revoked.ui.navigateTo = null;
+  revoked.maps.find((map) => map.type === 'shared').active = false;
+  store.replaceState(revoked);
+  store.dispatch('copy-execute');
+  assert.equal(store.getState().ui.navigateTo, null);
+  assert.match(store.getState().ui.notice, /대상 맵에 접근할 수 없어/);
+  assert.deepEqual(store.getState().places, revoked.places);
+
+  store.applyScenario('connected-personal');
+  store.dispatch('select-place', 'pb-soup');
+  store.dispatch('open-copy', 'selected');
+  assert.match(renderRoute(store.getState(), '#/map?view=list'), /선택한 1곳/);
+  store.dispatch('copy-sheet-preview');
+  assert.equal(store.getState().copy.draft.back, '#/map?view=list');
+  store.dispatch('open-copy', 'one:shared-cafe');
+  assert.match(renderRoute(store.getState(), '#/place/shared-cafe'), /이 장소 1곳/);
+  store.dispatch('copy-sheet-preview');
+  assert.equal(store.getState().copy.draft.direction, 'shared-to-personal');
+  assert.equal(store.getState().copy.draft.back, '#/place/shared-cafe');
+
+  store.dispatch('route-params', { id: 'shared-cafe' });
+  store.dispatch('edit-field', { field: 'name', value: '편집한 예시 카페' });
+  store.dispatch('edit-category', '놀거리');
+  store.dispatch('edit-field', { field: 'memoText', value: '함께 볼 메모' });
+  store.dispatch('save-edit', 'shared-cafe');
+  assert.match(renderRoute(store.getState(), '#/place/shared-cafe'), /편집한 예시 카페|함께 볼 메모/);
+  assert.equal(store.getState().ui.notice, '저장했어요');
+  store.dispatch('open-delete', 'shared-cafe');
+  store.dispatch('confirm-delete', 'shared-cafe');
+  assert.equal(store.getState().ui.navigateTo, '#/map');
+  assert.equal(store.getState().ui.undo.action, 'restore-place');
+  assert.doesNotMatch(renderRoute(store.getState(), '#/map?view=list'), /편집한 예시 카페/);
+  store.dispatch('restore-place', 'shared-cafe');
+  assert.match(renderRoute(store.getState(), '#/map?view=list'), /편집한 예시 카페/);
+  assert.equal(store.getState().ui.undo, null);
+  assert.equal(store.getState().dmDefaultTarget, 'personal');
+  store.dispatch('confirm-delete', 'shared-wine');
+  store.dispatch('source', 'shared-soup');
+  assert.equal(store.getState().ui.undo, null, '새 알림에 이전 삭제의 되돌리기를 붙이지 않는다');
+
+  store.applyScenario('connected-personal');
+  store.dispatch('save-location', 'pb-bakery');
+  assert.match(renderRoute(store.getState(), '#/map'), /data-id="pb-bakery"/);
+  store.applyScenario('solo');
+  assert.match(renderRoute(store.getState(), '#/copy/initial'), /공유 맵이 아직 없어요/);
+  store.dispatch('open-copy', 'all');
+  assert.match(renderRoute(store.getState(), '#/map?view=list'), /복제할 다른 맵이 없어요/);
+});
+
+test('실제 main 이벤트로 화면 이동·메모 한글 조합·삭제 포커스·되돌리기·하단 스크롤을 처리한다', async () => {
+  const keys = ['document', 'window', 'HTMLInputElement'];
+  const previous = keys.map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]);
+  const listeners = {}, windowListeners = {};
+  let controls = [], markup = '', hash = '#/catalog', pending = false, renders = 0, scrolled = 0;
+  const decode = (text) => text.replace(/&(?:amp|lt|gt|quot|#39);/g, (value) => ({ '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'" })[value]);
+  class Input {}
+  const doc = { activeElement: null, getElementById(id) {
+    return controls.find((element) => element.id === id) ?? (id === 'place-sources' && markup.includes('id="place-sources"') ? { scrollIntoView() { scrolled += 1; } } : null);
+  } };
+  const app = {
+    addEventListener(type, listener) { listeners[type] = listener; },
+    querySelectorAll() { return controls.filter((element) => element.dataset.action); },
+    querySelector(selector) { return selector === '[data-autofocus]' ? controls.find((element) => element.autofocus) : null; },
+    set innerHTML(value) {
+      renders += 1; markup = value; doc.activeElement = null;
+      controls = [...value.matchAll(/<(button|a|input|textarea)\b([^>]*)>(?:([^<]*)<\/textarea>)?/g)].map(([, tag, attrs, body]) => {
+        const attribute = (name) => new RegExp(`(?:^|\\s)${name}="([^"]*)"`).exec(attrs)?.[1];
+        const element = Object.assign(tag === 'input' ? new Input() : {}, {
+          tagName: tag.toUpperCase(), id: attribute('id'), type: attribute('type') ?? 'text',
+          value: decode(tag === 'textarea' ? body ?? '' : attribute('value') ?? ''),
+          dataset: { action: attribute('data-action'), id: decode(attribute('data-id') ?? ''), field: attribute('data-field') },
+          autofocus: /\sdata-autofocus(?:\s|$)/.test(attrs),
+          checked: /\schecked(?:\s|$)/.test(attrs),
+          getAttribute: attribute,
+          focus() { doc.activeElement = element; }, closest() { return element; },
+          setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; },
+          matches(selector) { return selector === 'input[data-action]' ? tag === 'input' && !!attribute('data-action')
+            : tag === 'input' || (tag === 'button' && attribute('type') === 'submit'); },
+        });
+        return element;
+      });
+    },
+  };
+  doc.querySelector = () => app;
+  const win = { location: { get hash() { return hash; }, set hash(value) { if (hash !== value) { hash = value; pending = true; } } },
+    addEventListener(type, listener) { windowListeners[type] = listener; }, scrollTo() {} };
+  function flush() {
+    for (let count = 0; pending; count += 1) {
+      assert.ok(count < 5, '이동이 반복되지 않아야 한다');
+      pending = false; windowListeners.hashchange();
+    }
+  }
+  function control(action, id) {
+    const found = controls.find((element) => element.dataset.action === action && (id === undefined || element.dataset.id === id));
+    assert.ok(found, `${action}: ${id ?? ''}`);
+    return found;
+  }
+  function click(action, id) {
+    const target = control(action, id); target.focus();
+    listeners.click({ target, preventDefault() {} }); flush();
+  }
+  function preset(id) { win.location.hash = '#/catalog'; flush(); click('catalog', id); }
+  Object.assign(globalThis, { document: doc, window: win, HTMLInputElement: Input });
+  try {
+    await import('../src/main.js?ui02-interactions');
+    preset('2-1');
+    click('copy-initial-next');
+    assert.equal(hash, '#/copy/select');
+    const pick = control('copy-pick', 'pb-soup');
+    listeners.input({ target: pick }); flush();
+    click('copy-pick-preview');
+    assert.equal(hash, '#/copy/preview');
+    click('copy-execute');
+    assert.equal(hash, '#/copy/result');
+    click('copy-done');
+    assert.equal(hash, '#/map');
+
+    preset('6-4');
+    let memo = doc.getElementById('edit-memoText'); memo.focus();
+    const before = renders;
+    listeners.compositionstart({ target: memo });
+    memo.value = '함'; listeners.input({ target: memo, isComposing: true });
+    memo.value = '함께'; listeners.input({ target: memo });
+    assert.equal(renders, before);
+    memo.value = '함께 입력한 메모';
+    listeners.compositionend({ target: memo });
+    memo = doc.getElementById('edit-memoText');
+    assert.equal(memo.value, '함께 입력한 메모');
+    assert.equal(doc.activeElement, memo);
+    const name = doc.getElementById('edit-name');
+    name.value = '예시 수정 카페'; listeners.input({ target: name });
+    click('save-edit', 'shared-cafe');
+    assert.equal(hash, '#/place/shared-cafe');
+    assert.match(markup, /예시 수정 카페|함께 입력한 메모/);
+    assert.match(markup, /class="toast" role="status"><span>저장했어요/);
+    click('open-delete', 'shared-cafe');
+    assert.equal(doc.activeElement.dataset.action, 'confirm-delete');
+    listeners.keydown({ key: 'Escape', preventDefault() {} });
+    assert.doesNotMatch(markup, /role="alertdialog"/);
+    click('open-delete', 'shared-cafe');
+    click('confirm-delete', 'shared-cafe');
+    assert.equal(hash, '#/map');
+    assert.match(markup, /휴지통으로 이동했어요.*되돌리기/s);
+    assert.doesNotMatch(markup, /예시 수정 카페/);
+    click('restore-place', 'shared-cafe');
+    assert.match(markup, /예시 수정 카페/);
+    assert.match(markup, /되돌렸어요/);
+
+    preset('6-2');
+    assert.equal(scrolled, 1);
+    click('directions');
+    assert.equal(scrolled, 1, 'scrollTarget은 한 번만 처리한다');
+    assert.match(markup, /외부 지도 앱 연결은 아직 준비 중이에요/);
+
+    preset('2-3');
+    assert.match(markup, /role="dialog"/);
+    click('copy-sheet-preview');
+    assert.equal(hash, '#/copy/preview');
+    assert.match(markup, /2곳 복제하기/);
+    preset('6-6');
+    assert.equal(doc.activeElement.dataset.action, 'confirm-delete');
+    preset('6-5');
+    click('save-location', 'pb-bakery');
+    assert.equal(hash, '#/place/pb-bakery');
+    assert.match(markup, /위치 확인됨/);
+  } finally {
+    for (const [key, descriptor] of previous) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+      else delete globalThis[key];
+    }
+  }
+});
 
 for (const entry of CATALOG) {
   test(`${entry.id} 카탈로그 프리셋이 화면 명세와 비공개 경계를 지킨다`, () => {
@@ -64,9 +313,9 @@ test('시나리오는 독립된 전체 상태이며 시나리오 전환 시 화�
   assert.equal(store.getState().maps.some((map) => map.type === 'shared'), false);
 });
 
-test('17개 카탈로그 화면과 추가 링크는 등록된 라우트로 연결된다', () => {
-  assert.equal(CATALOG.length, 17);
-  assert.equal(new Set(CATALOG.map((entry) => entry.id)).size, 17);
+test('30개 카탈로그 화면과 추가 링크는 등록된 라우트로 연결된다', () => {
+  assert.equal(CATALOG.length, 30);
+  assert.equal(new Set(CATALOG.map((entry) => entry.id)).size, 30);
   const views = CATALOG.map((entry) => renderRoute(catalogState(entry), entry.route));
   views.push(renderRoute(createScenario(), '#/catalog'), renderRoute(createScenario(), '#/demo/dm'));
   for (const markup of views) {
@@ -201,14 +450,18 @@ test('시작 화면은 원문 설명과 상단 워드마크·단계 카드·하�
   assert.doesNotMatch(markup, /brand-mark|eyebrow|⌁|마음에 든 장소를 보내 주세요/);
 });
 
-test('카탈로그 17개 제목은 리뷰에 지정된 목업 제목을 유지한다', () => {
+test('카탈로그 30개 제목은 브리프에 지정된 목업 제목을 유지한다', () => {
   assert.deepEqual(CATALOG.map(({ title }) => title), [
     '서비스 소개 · 개인 맵 시작', '최초 DM → 웹 연결 · 비공개 임시 접수', '본인 계정 확인',
     '저장 대상 확인 · 연결 전', '함께 쓰기 → 연결 코드 만들기 · 사용자 A', '코드 상태 · 만료·취소·사용 완료·재발급',
     '코드 입력 → 연결 대상 확인 · 사용자 B', '연결 완료 · 개인 맵 유지 → 초기 복제', '이미 활성 공유 맵에 참여 중',
+    '초기 복제 선택', '내 개인 장소에서 선택', '연결 후 진입 · 상세 1개 / 선택 / 전체',
+    '미리보기 · 개인 → 공유', '미리보기 · 공유 → 내 개인', '결과 · 새 장소·출처 추가·일부 실패', '복제 이력 · 원 저장자와 복제한 사람',
     '개인 맵 지도 · 연결 전', '공유 맵 · 핀 → 하단 카드 요약', '맵 전환',
     '목록 · 방문 상태·보낸 사람 조회, 미확정 포함', '개인 맵 빈 상태', '공유 맵 빈 상태',
     '검색 결과 없음', '지도 로딩 실패 · 목록·원본은 이용 가능',
+    '공유 맵 상세 · 정보 카드 (상단)', '상세 (스크롤 하단) · 출처·기록·관리', '이미지 없음 + 원문 접근 불가 · 개인 맵',
+    '정보·카테고리·메모 수정', '위치 수정', '이 맵에서 삭제 → 휴지통',
   ]);
 });
 
@@ -266,12 +519,12 @@ test('목록 복제 버튼은 선택 모드 밖에도 있고 선택한 장소가
   const store = createStore(createScenario('connected'));
   let markup = renderRoute(store.getState(), '#/map?view=list');
   assert.match(markup, /<button[^>]*disabled[^>]*>선택해서 복제<\/button>/);
-  assert.match(markup, /href="#\/todo\/UI-02\/2-4"[^>]*>전체 복제<\/a>/);
+  assert.match(markup, /data-action="open-copy" data-id="all"[^>]*>전체 복제<\/button>/);
   assert.doesNotMatch(markup, /type="checkbox"/);
   store.dispatch('toggle-selection');
   store.dispatch('select-place', 'shared-cafe');
   markup = renderRoute(store.getState(), '#/map?view=list');
-  assert.match(markup, /href="#\/todo\/UI-02\/2-4"[^>]*>선택해서 복제<\/a>/);
+  assert.match(markup, /data-action="open-copy" data-id="selected"[^>]*>선택해서 복제<\/button>/);
   store.dispatch('toggle-selection');
   assert.match(renderRoute(store.getState(), '#/map?view=list'), /<button[^>]*disabled[^>]*>선택해서 복제<\/button>/);
 });

@@ -38,6 +38,15 @@
   --color-bubble: #F1F2F4;
   --color-bubble-outgoing: #E4E9F7;
   --color-dim: #17201B59;
+  --color-auto-bg: #E6EEF8;
+  --color-auto-ink: #1D4E89;
+  --color-user-bg: #F0EBDD;
+  --color-user-ink: #6A4E12;
+  --color-memo-bg: #FFFCF4;
+  --color-warn-soft: #FFFBEF;
+  --color-danger-line: #C7493A;
+  --color-dim-strong: #17201B66;
+  --color-toast-action: #9FE3C9;
   --shadow-soft: 0 1px 4px #0000001F;
   --shadow-panel: 0 -4px 16px #00000024;
   --shadow-pin: 0 1px 3px #00000040;
