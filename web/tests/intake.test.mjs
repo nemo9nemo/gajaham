@@ -8,7 +8,7 @@ import { buildCopyDraft, executeCopy } from '../src/logic/copy.js';
 import { reduceAction } from '../src/store.js';
 import { renderRoute } from '../src/router.js';
 import { issueCode, confirmConnect } from '../src/logic/code.js';
-import { updatePlaceInfo, updateLocation } from '../src/logic/place-edit.js';
+import { updatePlaceInfo, updateLocation, trashPlace } from '../src/logic/place-edit.js';
 import { demoSearchOptions } from '../src/logic/complete-actions.js';
 
 const submit = (state, target = 'both', url = 'instagram.com/p/[단위-시연]') => submitIntake(state, url, target, { template: demoPlace('soup') });
@@ -401,4 +401,36 @@ test('직접 선택한 기존 카드의 저장 재시도는 중간 이름 변경
   assert.equal(result.job.results[0].placeId, 'shared-bakery');
   assert.equal(result.state.places.length, state.places.length);
   assert.equal(result.state.places.find((place) => place.id === 'shared-bakery').name, '재시도 전 고친 이름');
+});
+
+test('SHA 리뷰 회귀: 각 맵에서 별도 접수한 같은 URL도 복제 시 출처를 중복하지 않는다', () => {
+  let state = createScenario('connected');
+  const personal = submitIntake(state, 'instagram.com/p/same-content?tracking=one', 'personal-b', { template: demoPlace() });
+  const first = processIntake(personal.state, personal.job.id);
+  const shared = submitIntake(first.state, 'www.instagram.com/p/same-content/?tracking=two', 'shared-ab', { template: demoPlace() });
+  const second = processIntake(shared.state, shared.job.id);
+  const target = structuredClone(second.state.places.find((place) => place.id === second.job.results[0].placeId));
+  const draft = buildCopyDraft(second.state, { sourceMapId: 'personal-b', targetMapId: 'shared-ab', placeIds: [first.job.results[0].placeId] });
+  const copied = executeCopy(second.state, draft.draft);
+  assert.equal(copied.result.items[0].outcome, 'unchanged');
+  assert.deepEqual(copied.state.places.find((place) => place.id === target.id), target);
+});
+
+test('SHA 리뷰 회귀: 수동 선택 카드 삭제 후 재시도는 재선택으로 이어지고 카드를 재생성하지 않는다', () => {
+  let state = createScenario('inbox-no-place');
+  state.mock.intakeFailMapIds = ['shared-ab'];
+  const selected = demoSearchOptions(state, '베이커리').find((place) => place.id === 'shared-bakery');
+  const failed = resolveJob(state, 'intake-1', selected, { manual: true });
+  state = trashPlace(failed.state, 'shared-bakery');
+  state.mock = { ...state.mock, intakeFailMapIds: [] };
+  const places = structuredClone(state.places);
+  state = reduceAction(state, 'route-params', { id: 'intake-1' });
+  state = reduceAction(state, 'job-retry', 'intake-1');
+  assert.deepEqual(state.places, places);
+  assert.equal(findJob(state, 'intake-1').reselectionRequired, true);
+  assert.equal(state.ui.navigateTo, '#/inbox/intake-1/no-place');
+  assert.match(renderRoute(state, state.ui.navigateTo), /다시 골라/);
+  const saved = resolveJob(state, 'intake-1', branchCandidates()[0], { manual: true });
+  assert.equal(saved.job.stage, 'saved');
+  assert.equal(saved.job.reselectionRequired, false);
 });

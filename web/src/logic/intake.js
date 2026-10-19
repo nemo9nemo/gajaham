@@ -122,6 +122,15 @@ export function processIntake(state, id) {
   const job = findJob(state, id);
   if (!job) return { ok: false, reason: 'no-access', state };
   if (job.primaryComplete) return { ok: true, job, state };
+  if (job.manual && job.template?.existingPlaceId && !findAccessiblePlace(state, job.template.existingPlaceId)) {
+    const results = [...job.results.filter((result) => result.status === 'saved'), ...job.targetMapIds
+      .filter((mapId) => !job.results.some((result) => result.mapId === mapId && result.status === 'saved'))
+      .map((mapId) => ({ mapId, status: 'failed', reason: 'needs-reselection' }))];
+    const next = { ...job, results, template: null, analysis: 'no-place', reselectionRequired: true,
+      stage: results.some((result) => result.status === 'saved') ? 'partial' : 'needs-place' };
+    const nextState = replaceJob(state, next);
+    return { ok: false, reason: 'needs-reselection', job: findJob(nextState, id), state: nextState };
+  }
   if (job.analysis !== 'ready' || !job.template) return { ok: false, reason: 'needs-confirmation', state };
   if (!parseIntakeUrl(job.sourceUrl)?.supported && !job.manual) return { ok: false, reason: 'unsupported', state };
   let places = [...state.places];
@@ -177,7 +186,7 @@ export function resolveJob(state, id, template, { manual = null } = {}) {
   const selected = isManual ? { ...structuredClone(template), menu: null, tip: null, hasImage: false,
     existingPlaceId,
     summary: '사용자가 직접 연결한 장소예요. 게시물 내용을 분석한 결과가 아니에요.' } : structuredClone(template);
-  const prepared = replaceJob(state, { ...job, template: selected, manual: isManual, analysis: 'ready', stage: 'processing' });
+  const prepared = replaceJob(state, { ...job, template: selected, manual: isManual, analysis: 'ready', stage: 'processing', reselectionRequired: false });
   return processIntake(prepared, id);
 }
 

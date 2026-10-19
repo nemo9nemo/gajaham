@@ -74,10 +74,12 @@ export function reduceCompleteAction(state, action, value) {
     case 'job-open': return findJob(state, value) ? go(state, jobPath(value), { activeJobId: value }) : state;
     case 'job-process': {
       const result = processIntake(state, id);
+      if (result.reason === 'needs-reselection') return go(result.state, jobPath(id, '/no-place'), { notice: '선택한 기존 카드를 사용할 수 없어요. 장소를 다시 골라 주세요.' });
       return result.ok ? go(result.state, resultPath(id)) : failed(state, '확인이나 보완이 필요한 항목이에요. 장소를 먼저 확인해 주세요.');
     }
     case 'job-retry': {
       const result = processIntake(state, value);
+      if (result.reason === 'needs-reselection') return go(result.state, jobPath(value, '/no-place'), { activeJobId: value, notice: '선택한 기존 카드를 사용할 수 없어요. 장소를 다시 골라 주세요.' });
       return result.ok ? go(result.state, resultPath(value), { activeJobId: value }) : failed(state);
     }
     case 'job-target-choice': return intakeTargets(state, value).length ? ui(state, { targetChoice: value, targetJobId: id, targetChoiceMapIds: intakeTargets(state, value) }) : state;
@@ -107,6 +109,7 @@ export function reduceCompleteAction(state, action, value) {
     case 'job-capture': return ui(supplementJob(state, id, { capture: true }), { notice: '캡처 보완을 선택했어요. 이 목업은 파일을 업로드하지 않아요.' });
     case 'job-reanalyze': {
       const job = findJob(state, id);
+      if (job?.reselectionRequired) return go(state, jobPath(id, '/no-place'));
       if (job?.primaryComplete || job?.stage === 'saved') return go(state,
         job.childIds?.length || job.unresolvedNames?.length ? jobPath(id, '/multiple') : resultPath(id),
         { notice: '이미 저장한 결과를 유지했어요.' });

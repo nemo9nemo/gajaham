@@ -8,6 +8,6 @@ Codex가 기획·구현·검증·독립 리뷰를 진행하는 작업 단위 브
 | --- | --- | --- |
 | [UI-01](UI-01-static-shell-start-map.md) | 시작·연결·지도·목록 17개 | DONE · main 병합 |
 | [UI-02](UI-02-copy-place-detail.md) | 복제·상세 13개, 비공개 ID 지적 조치 | DONE · 로컬 커밋·독립 리뷰 완료 |
-| [UI-ALL](UI-ALL-complete-static-mockup.md) | 나머지 28개 추가, 전체 58개 통합 | DONE · 156개 검사·58개 화면·23개 동작, 구현 리뷰 지적 조치 완료 · SHA 리뷰는 별도 장부 |
+| [UI-ALL](UI-ALL-complete-static-mockup.md) | 나머지 28개 추가, 전체 58개 통합 | DONE · 158개 검사·58개 화면·24개 동작, 구현·최초 SHA 리뷰 지적 조치 완료 · 최신 SHA 리뷰는 별도 장부 |
 
 UI-ALL은 UI-03(링크 등록·처리함)과 UI-04(약속·설정)의 계획 범위를 함께 완성한다. 정적 목업 진행표이며 실제 서비스 연동 완료를 뜻하지 않는다.

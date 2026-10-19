@@ -1,6 +1,7 @@
 import { visibleMaps } from './maps.js';
 import { activePlaces } from './places.js';
 import { findAccessiblePlace } from './place-edit.js';
+import { parseIntakeUrl } from './intake.js';
 
 export function copyTargets(state, sourceMapId, userId = state.currentUserId) {
   return visibleMaps(state, userId).filter((map) => map.id !== sourceMapId);
@@ -72,7 +73,12 @@ export function executeCopy(state, draft, userId = state.currentUserId) {
       ((source.locationStatus === 'confirmed' && source.placeKey && place.locationStatus === 'confirmed' && place.placeKey === source.placeKey) ||
         [...copyLineage(places, place.id)].some((id) => sourceLineage.has(id))));
     if (target) {
-      const sources = source.sources.filter((entry) => !target.sources.some((existing) => existing.id === entry.id));
+      const sources = [];
+      for (const entry of source.sources) {
+        const url = entry.url && parseIntakeUrl(entry.url)?.url;
+        if (![...target.sources, ...sources].some((existing) => existing.id === entry.id ||
+            url && existing.url && parseIntakeUrl(existing.url)?.url === url)) sources.push(entry);
+      }
       if (sources.length) places = places.map((place) => place.id === target.id ? {
         ...target, sources: [...target.sources, ...structuredClone(sources)],
         history: [...target.history, { type: 'source-added', actorId: userId, at: '[날짜]' }],

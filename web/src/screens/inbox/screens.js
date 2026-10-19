@@ -122,7 +122,9 @@ export function jobMultipleScreen(state) {
 export function jobNoPlaceScreen(state) {
   const job = getJob(state);
   if (!job) return missingItem();
-  let body = '<span class="status-chip warn">장소 정보 확인 필요</span><h1>게시물에서 장소를 찾지 못했어요</h1><p>링크는 보관돼 있어요. 직접 장소를 연결하면 맵에 저장돼요.</p>' +
+  let body = '<span class="status-chip warn">장소 정보 확인 필요</span>' +
+    (job.reselectionRequired ? '<h1>장소를 다시 골라 주세요</h1><p>선택한 기존 카드가 삭제됐거나 접근할 수 없어요. 새 카드를 자동으로 만들지 않았어요.</p>' :
+      '<h1>게시물에서 장소를 찾지 못했어요</h1><p>링크는 보관돼 있어요. 직접 장소를 연결하면 맵에 저장돼요.</p>') +
     button('장소 검색해서 연결', { action: 'job-find-place' }) + button('링크만 보관', { action: 'job-keep', variant: 'secondary' });
   if (state.ui.showMenuExample) {
     const example = state.places.find((place) => place.name === '예시 국밥집' && visibleMaps(state).some((map) => map.id === place.mapId));
