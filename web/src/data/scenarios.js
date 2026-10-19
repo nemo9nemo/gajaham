@@ -1,15 +1,17 @@
 import { USERS, MAPS, PLACES, MOCK_CODE } from './mock.js';
 import { buildCopyDraft, executeCopy } from '../logic/copy.js';
+import { COMPLETE_SCENARIOS, completeDemo } from './complete-demo.js';
 
 export const SCENARIOS = [
   'new-visitor', 'dm-intake', 'dm-verify', 'solo', 'solo-empty', 'code-owner',
   'code-entry', 'connected', 'connected-empty-shared', 'already-shared', 'map-error',
   'connected-personal', 'copy-initial', 'copy-preview', 'copy-partial', 'copy-to-personal',
+  ...COMPLETE_SCENARIOS,
 ];
 
 export function createScenario(key = 'new-visitor') {
   if (!SCENARIOS.includes(key)) throw new Error(`알 수 없는 시나리오: ${key}`);
-  const connected = ['connected', 'connected-empty-shared', 'already-shared', 'map-error',
+  const connected = (COMPLETE_SCENARIOS.includes(key) && key !== 'link-solo') || ['connected', 'connected-empty-shared', 'already-shared', 'map-error',
     'connected-personal', 'copy-initial', 'copy-preview', 'copy-partial', 'copy-to-personal'].includes(key);
   const empty = ['new-visitor', 'dm-intake', 'dm-verify', 'solo-empty'].includes(key);
   let state = {
@@ -52,5 +54,5 @@ export function createScenario(key = 'new-visitor') {
       state.mock = { copyFailIds: [] };
     }
   }
-  return state;
+  return completeDemo(state, key);
 }

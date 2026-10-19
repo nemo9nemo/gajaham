@@ -28,7 +28,7 @@
 
 ## 산출물과 검증
 
-정적 목업 UI는 `web/`에 있고 의존성 없는 HTML·CSS·ES 모듈이다(docs/decisions/0001-static-mock-ui-stack.md). 패키지를 추가하지 않는다. Node는 Codex 런타임 v24 기준이다.
+정적 목업 UI는 `web/`에 있고 P0 58개 화면 카탈로그와 목 데이터 상태 전이를 제공하는 의존성 없는 HTML·CSS·ES 모듈이다(docs/decisions/0001-static-mock-ui-stack.md). 패키지를 추가하지 않는다. Node는 Codex 런타임 v24 기준이다. 실제 로그인·DM·분석·DB 연동과 정적 목업의 동작을 구분한다.
 
 - 단위·화면 테스트: `node --test --test-isolation=none "web/tests/*.test.mjs"`
 - 카탈로그 정합: `node web/scripts/check-screens.mjs`

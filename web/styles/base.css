@@ -1,4 +1,18 @@
 * { box-sizing: border-box; }
+.complete-page.with-tabs { padding-bottom: 64px; }
+.complete-page .flow-body { gap: 12px; }
+.complete-page .card { min-width: 0; overflow-wrap: anywhere; }
+.complete-page .flow-footer { gap: 9px; }
+.candidate-option { width: 100%; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.complete-page .option-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+.complete-page .save-option { text-align: left; color: inherit; font: inherit; background: var(--color-surface); }
+.complete-page .save-option.selected { background: var(--color-option-selected); }
+.record-details { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 7px 10px; margin: 0; font-size: 13px; }
+.record-details dt { color: var(--color-ink-subtle); }
+.record-details dd { margin: 0; overflow-wrap: anywhere; }
+.plain-list { padding-left: 20px; font-size: 13px; display: grid; gap: 8px; }
+.job-title { font-weight: 600; font-size: 14px; }
+.complete-page textarea { min-height: 130px; }
 html { color: var(--color-ink); background: var(--color-board); font-family: 'IBM Plex Sans KR', system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 15px; line-height: 1.6; }
 body { margin: 0; }
 button, input { font: inherit; }

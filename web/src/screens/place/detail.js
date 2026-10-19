@@ -34,7 +34,7 @@ export function placeDetailScreen(state) {
   if (place.locationStatus === 'confirmed') body += html`<div class="place-heading"><h1>${place.name}</h1><p class="caption">${place.category} · ${place.region} · 위치 확인됨</p><p class="caption">위치 확인은 지점 확인이에요. 영업 정보가 최신이라는 뜻은 아니에요.</p></div>`;
   else body += html`<p class="caption">${place.category} · 위치 미확정 · 지도에 핀 없음</p>`;
   if (place.sourceAccess === 'unavailable') body += '<section class="card source-unavailable"><span class="status-chip warn">원문에 접근할 수 없어요</span><p class="caption">원문이 삭제됐거나 비공개로 바뀐 것 같아요. 이미 저장한 정보와 내 메모는 그대로 볼 수 있어요.</p></section>';
-  body += '<section class="soft"><h2 class="section-label">게시물 소개' + sourceTag(state, place, 'summary') + '</h2>' + html`<p class="info-text">${place.summary}</p></section>` +
+  body += '<section class="soft"><h2 class="section-label">' + (place.inputOrigin === 'manual' ? '직접 연결한 장소' : '게시물 소개') + sourceTag(state, place, 'summary') + '</h2>' + html`<p class="info-text">${place.summary}</p></section>` +
     '<section class="card"><h2 class="section-label">' + html`${menuTitle(place)}` + sourceTag(state, place, 'menu') + '</h2>' +
     (place.menu ? html`<strong class="menu-name">${place.menu.name}</strong><p class="caption">${place.menu.kind === 'recommended' ? place.menu.basis : '추천 근거 없음'}</p>` : '') + '</section>';
   if (place.tip) body += html`<section class="card"><h2 class="section-label">방문 팁 · 게시물 작성자의 경험</h2><p class="info-text">${place.tip}</p></section>`;
@@ -43,11 +43,11 @@ export function placeDetailScreen(state) {
   if (place.locationStatus !== 'confirmed') body += button('위치 직접 정하기', { href: placeHref(place.id, '/location') });
   const want = place.wantBy.includes(state.currentUserId);
   body += html`<div class="visit-actions ${shared ? '' : 'visit-actions-two'}"><button type="button" class="visit-action" data-action="toggle-want" data-id="${place.id}" aria-pressed="${want}">가고 싶어</button>` +
-    (shared ? '<a class="visit-action" href="#/todo/UI-04/7-1">이번 약속 후보</a>' : '') +
+    (shared ? html`<button type="button" class="visit-action" data-action="candidate-from-detail" data-id="${place.id}">이번 약속 후보</button>` : '') +
     html`<button type="button" class="visit-action" data-action="toggle-visited" data-id="${place.id}" aria-pressed="${place.visit === 'visited'}">다녀왔어요</button></div>`;
   body += html`<section id="place-sources" class="stack"><h2 class="section-label">참고 글 ${place.sources.length}개</h2>` +
-    place.sources.map((source, index) => '<article class="card"><div class="content-row">' + html`<strong>출처 ${index + 1} · 인스타 ${source.kind}</strong>` +
-      button('원본', { action: 'source', id: place.id, variant: 'text' }) + '</div>' +
+    place.sources.map((source, index) => '<article class="card"><div class="content-row">' + html`<strong>출처 ${index + 1} · ${['게시물', '릴스'].includes(source.kind) ? `인스타 ${source.kind}` : `원본 ${source.kind}`}</strong>` +
+      button('원본', { action: 'source-entry', id: String(index), variant: 'text' }) + '</div>' +
       html`<p class="caption">보낸 사람 ${userInitial(state, source.senderId)} · 저장 ${source.savedAt}${source.postedAt ? ` · 게시일 ${source.postedAt}` : ''}${source.fetchedAt ? ` · 가져온 시각 ${source.fetchedAt}` : ''}</p>` +
       (source.basis ? html`<p class="caption">근거: ${source.basis}</p>` : '') + (source.menuNote ? html`<p class="caption">${source.menuNote}</p>` : '') + '</article>').join('') +
     html`<p class="soft caption">새 출처가 더해져도 ${shared ? '우리' : '내'} 메모와 직접 수정한 내용은 바뀌지 않아요.</p></section>`;

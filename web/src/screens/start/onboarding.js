@@ -2,6 +2,8 @@ import { html } from '../../html.js';
 import { appBar } from '../../components/app-bar.js';
 import { button } from '../../components/button.js';
 import { mapBadge } from '../../components/map-badge.js';
+import { mapLabel } from '../../components/complete-shared.js';
+import { findJob } from '../../logic/intake.js';
 import { flowPage } from './layout.js';
 
 export function startScreen() {
@@ -10,7 +12,7 @@ export function startScreen() {
     '<p class="muted">게시물·릴스를 서비스 계정에 DM으로 보내거나 링크를 붙여 넣으면, 확인할 수 있는 내용에서 장소와 게시물 내용을 정리해 내 맵에 보관해요.</p>' +
     '<ol class="steps card"><li><b>1</b> · DM으로 전달하거나 링크 입력</li><li><b>2</b> · 장소 확인, 필요하면 직접 보완</li><li><b>3</b> · 지도와 목록에서 다시 보기</li></ol>' +
     '<p class="soft caption">혼자 써도 충분해요. 함께 쓰기는 나중에 언제든 연결할 수 있어요.</p>',
-    button('첫 링크 저장하기', { href: '#/todo/UI-03/3-1' }) + button('로그인', { action: 'login-start', variant: 'secondary' }) +
+    button('첫 링크 저장하기', { href: '#/links/new' }) + button('로그인', { action: 'login-start', variant: 'secondary' }) +
     '<p class="caption center">모바일 웹에서 바로 이용 · 앱 설치 없음</p>', 'landing');
 }
 
@@ -36,11 +38,17 @@ export function verifyScreen() {
 }
 
 export function saveTargetScreen(state) {
+  const pending = findJob(state, state.ui.verificationJobId);
+  if (pending?.stage === 'waiting') return flowPage(appBar('저장 대상 확인', { back: '#/verify' }),
+    '<h2>이 항목의 저장 대상을 확인해 주세요</h2>' + pending.targetMapIds.map((id) => '<section class="card content-row">' + mapLabel(state, id) + '</section>').join('') +
+    html`<section class="card"><p class="caption">이번에 처리할 링크</p><p class="link-text">${pending.originalUrl ?? pending.sourceUrl}</p></section>` +
+    '<p class="caption">접수할 때 고른 맵으로 이어져요. 처리함에서 이 항목의 저장 대상을 바꿀 수 있어요.</p>',
+    button('이 항목 처리 요청', { action: 'confirm-intake' }));
   return flowPage(appBar('저장 대상 확인', { back: '#/verify' }), '<h2>어디에 저장할까요?</h2>' +
     '<div class="save-option selected"><span class="radio-mark" aria-hidden="true"></span><div>' + mapBadge('personal') + '<strong>내 개인 맵</strong><p class="caption">나만 볼 수 있어요</p><span class="sr-only">선택됨</span></div></div>' +
     '<div class="save-option disabled" aria-disabled="true"><span class="radio-mark" aria-hidden="true"></span><div>' + mapBadge('shared') + '<strong>공유 맵</strong><p class="caption">함께 쓰기 연결 후 고를 수 있어요</p></div></div>' +
     '<p class="visibility"><b>누구에게 보이나요</b><span>나만</span></p><div class="card"><p class="caption">이번에 저장할 링크</p>' +
     html`<p class="link-text">${state.intakeLinks[0] ?? 'instagram.com/reel/[시연용]'}</p></div>` +
     '<p class="soft caption">DM으로 보낼 때 기본 저장 위치: <b>개인 맵</b> · 설정에서 바꿀 수 있어요</p>',
-    button('내 개인 맵에 저장 요청', { href: '#/todo/UI-03/5-1' }) + '<p class="caption center">요청 후 처리함에서 결과를 확인해요</p>');
+    button('내 개인 맵에 저장 요청', { action: 'confirm-intake' }) + '<p class="caption center">요청 후 처리함에서 결과를 확인해요</p>');
 }

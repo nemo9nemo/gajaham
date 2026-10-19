@@ -43,6 +43,34 @@ const EXPECTED = {
   '6-4': ['직접 수정됨 · 사용자 B', 'data-field="memoText"', '<textarea'],
   '6-5': ['이 위치로 저장', '여기로 옮기기'],
   '6-6': ['우리 공유 맵에서 삭제할까요?', 'role="alertdialog"', 'data-autofocus'],
+  '3-1': ['게시물·릴스 링크', '연결 전에는 개인 맵에 저장돼요', '누구에게 보이나요'],
+  '3-2': ['어디에 저장할까요?', '둘 다', '이번 등록에만 적용'],
+  '3-3': ['접수됨 · 아직 저장 전', '링크를 접수했어요', '처리함에서 보기'],
+  '3-4': ['저장 완료', '실제 등록한 맵과 결과', '카드 보기'],
+  '3-5': ['일부 완료', '저장 실패', '실패한 맵에만 다시 저장'],
+  '3-6': ['분석 미지원 출처', '링크만 보관', '보관하기'],
+  '3-7': ['이미 저장된 링크', '기존 카드로 이동해요'],
+  '5-1': ['처리함', '연결 대기', '분석 중', '확인 필요'],
+  '5-2': ['이 항목의 저장 대상', '이 항목에만 적용', '적용'],
+  '5-3': ['어느 지점인가요?', '연남점', '합정점', '고르기 전에는 지도에 핀을 만들지 않아요'],
+  '5-4': ['콘텐츠를 읽을 수 없어요', '장소·메뉴를 추측하지 않았어요', '게시물 본문 붙여넣기'],
+  '5-5': ['여러 장소 확인 필요', '미확정 · 지도에 표시 안 됨', '장소 추가'],
+  '5-6': ['장소 정보 확인 필요', '게시물에서 장소를 찾지 못했어요', '메뉴 정보 없음'],
+  '5-7': ['DM 회신이 늦거나 오지 않을 수 있어요', '평소보다 오래 걸리고 있어요', '완료 시간은 약속드리기 어려워요'],
+  '5-8': ['공유 맵 권한 종료', '종료된 공유 맵에는 저장할 수 없어요', '개인 맵 저장만 유지'],
+  '7-1': ['이번 약속 후보가 아직 없어요', '공유 맵에서 후보 고르기'],
+  '7-2': ['후보 2/3', '후보에서 빼기', '가고 싶어'],
+  '7-3': ['후보 비교 · 3곳', '원문 메뉴', '이곳으로 정하기'],
+  '7-4': ['후보는 최대 3곳이에요', '바꿀 후보를 골라 주세요', '고른 후보와 바꾸기'],
+  '7-5': ['최종 장소 선택됨', '선택: 사용자 B', '선택 변경'],
+  '7-6': ['다녀왔어요 · 우리 공유 맵', '내 개인 맵의 복제본은 바뀌지 않아요', '새 약속 후보 고르기'],
+  '8-1': ['맵·설정', 'DM 계정 연결', 'DM 기본 저장 위치', '기록 내보내기'],
+  '8-2': ['이후 접수 항목부터 적용', '웹에서 보고 있는 맵과는 별개'],
+  '8-3': ['접근 가능한 맵만', '파일 형식 미정', '내보내기 요청'],
+  '8-4': ['휴지통', '복구 가능 기간 미정', '우리 공유 맵에 복구'],
+  '8-5': ['공유 맵에서 나갈까요?', '공유 장소 골라서 복제', '상대방의 DM 계정 연결은 바뀌지 않아요'],
+  '8-6': ['공유 연결 종료됨', 'DM 기본 저장 위치를 바꿨어요', '이전 공유 기록은 공개되지 않아요'],
+  '8-7': ['기록 삭제', '계정 탈퇴', '미정', '기록 내보내기'],
 };
 
 test('복제 미리보기는 추가 정보가 모두 해제되고 직접 진입·접근 실패를 안전하게 표시한다', () => {
@@ -469,9 +497,9 @@ test('시나리오는 독립된 전체 상태이며 시나리오 전환 시 화�
   assert.equal(store.getState().maps.some((map) => map.type === 'shared'), false);
 });
 
-test('30개 카탈로그 화면과 추가 링크는 등록된 라우트로 연결된다', () => {
-  assert.equal(CATALOG.length, 30);
-  assert.equal(new Set(CATALOG.map((entry) => entry.id)).size, 30);
+test('58개 카탈로그 화면과 추가 링크는 등록된 라우트로 연결된다', () => {
+  assert.equal(CATALOG.length, 58);
+  assert.equal(new Set(CATALOG.map((entry) => entry.id)).size, 58);
   const views = CATALOG.map((entry) => renderRoute(catalogState(entry), entry.route));
   views.push(renderRoute(createScenario(), '#/catalog'), renderRoute(createScenario(), '#/demo/dm'));
   for (const markup of views) {
@@ -518,9 +546,13 @@ test('로그인·본인 확인·저장 요청은 완료를 꾸미지 않고 다�
   assert.ok(renderRoute(state, '#/verify').includes('네, 제 계정이에요'));
   state = reduceAction(state, 'verify-account');
   assert.equal(state.dmAccountVerified, true);
-  assert.ok(renderRoute(state, '#/save-target').includes('#/todo/UI-03/5-1'));
+  assert.ok(renderRoute(state, '#/save-target').includes('data-action="confirm-intake"'));
   assert.equal(state.places.filter((place) => place.mapId === 'personal-b').length, 0);
-  assert.ok(renderRoute(state, '#/todo/UI-03/5-1').includes('준비 중인 화면이에요'));
+  state = reduceAction(state, 'confirm-intake');
+  assert.equal(state.intake.jobs.length, 1);
+  assert.equal(state.intake.jobs[0].stage, 'processing');
+  assert.equal(state.places.filter((place) => place.mapId === 'personal-b').length, 0);
+  assert.match(renderRoute(state, state.ui.navigateTo), /아직|분석 중/);
   assert.ok(renderRoute(createScenario(), '#/demo/dm').includes('[공유한 릴스 · 시연용]'));
 });
 
@@ -606,8 +638,8 @@ test('시작 화면은 원문 설명과 상단 워드마크·단계 카드·하�
   assert.doesNotMatch(markup, /brand-mark|eyebrow|⌁|마음에 든 장소를 보내 주세요/);
 });
 
-test('카탈로그 30개 제목은 브리프에 지정된 목업 제목을 유지한다', () => {
-  assert.deepEqual(CATALOG.map(({ title }) => title), [
+test('기존 카탈로그 30개 제목은 브리프에 지정된 목업 제목을 유지한다', () => {
+  assert.deepEqual(CATALOG.filter(({ id }) => /^[1246]-/.test(id)).map(({ title }) => title), [
     '서비스 소개 · 개인 맵 시작', '최초 DM → 웹 연결 · 비공개 임시 접수', '본인 계정 확인',
     '저장 대상 확인 · 연결 전', '함께 쓰기 → 연결 코드 만들기 · 사용자 A', '코드 상태 · 만료·취소·사용 완료·재발급',
     '코드 입력 → 연결 대상 확인 · 사용자 B', '연결 완료 · 개인 맵 유지 → 초기 복제', '이미 활성 공유 맵에 참여 중',

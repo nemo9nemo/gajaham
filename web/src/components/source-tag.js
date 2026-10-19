@@ -2,6 +2,8 @@ import { html } from '../html.js';
 import { userName } from '../data/mock.js';
 
 export function sourceTag(state, place, field, userInput = false) {
+  if ((field === 'menu' && !place.menu) || (field === 'memo' && !place.memo)) return '';
+  userInput ||= place.inputOrigin === 'manual';
   const actor = place.edits[field];
   const label = actor ? `직접 수정됨 · ${userName(state, actor)}` : userInput ? '사용자 입력'
     : place.sourceAccess === 'unavailable' ? '자동 추출 · 저장 당시' : '자동 추출';

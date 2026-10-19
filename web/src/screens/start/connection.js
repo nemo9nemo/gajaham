@@ -85,5 +85,5 @@ export function alreadySharedScreen(state) {
       html`<h2>${shared.name}</h2><p>${userName(state, partnerId)}와 함께 쓰는 중</p></section>` : '') +
     '<p class="muted">공유 맵은 한 번에 하나만 쓸 수 있어요. 새 코드로 자동으로 바꾸지 않아요. 새 사람과 연결하려면 먼저 지금 공유 맵에서 나가야 해요.</p>',
     (shared ? button('지금 공유 맵 보기', { action: 'show-shared', href: '#/map' }) : button('지도로 돌아가기', { href: '#/map' })) +
-    button('공유 맵 나가기 안내', { href: '#/todo/UI-04/8-5', variant: 'secondary' }));
+    button('공유 맵 나가기 안내', { href: '#/settings/leave', variant: 'secondary' }));
 }

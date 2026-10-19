@@ -34,7 +34,7 @@ export function buildCopyDraft(state, { sourceMapId, targetMapId, placeIds = [],
 }
 
 function copiedPlace(source, targetMapId, id, extras, userId, direction) {
-  const fields = ['name', 'category', 'region', 'locationStatus', 'pin', 'placeKey', 'summary', 'menu', 'tip', 'sources', 'sourceUrl', 'sourceAccess', 'hasImage'];
+  const fields = ['name', 'category', 'region', 'locationStatus', 'pin', 'placeKey', 'summary', 'menu', 'tip', 'sources', 'sourceUrl', 'sourceAccess', 'hasImage', 'inputOrigin', 'intakePlaceIdentity'];
   const base = structuredClone(Object.fromEntries(fields.map((field) => [field, source[field]])));
   if (source.locationStatus !== 'confirmed') Object.assign(base, { locationStatus: 'unconfirmed', pin: null });
   return {

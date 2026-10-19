@@ -63,9 +63,9 @@ function fakeMap(state, map, places) {
 function emptyMap(state, map) {
   return '<section class="empty empty-map">' +
     (map.type === 'personal' ? '<h2>아직 저장한 장소가 없어요</h2><p class="muted">인스타그램에서 본 게시물·릴스를 서비스 계정에 DM으로 보내거나, 링크를 붙여 넣어 저장해요.</p>' +
-      button('링크 등록', { href: '#/todo/UI-03/3-1' }) + button('DM으로 보내는 방법', { href: '#/todo/UI-03/3-1', variant: 'secondary' }) :
+      button('링크 등록', { action: 'link-start', href: '#/links/new' }) + button('DM으로 보내는 방법', { href: '#/demo/dm', variant: 'secondary' }) :
       '<h2>공유 맵에 아직 장소가 없어요</h2><p class="muted">내 개인 맵에서 함께 볼 장소를 골라 복제하거나, 새 링크를 공유 맵에 등록해요.</p>' +
-      button('내 개인 맵에서 복제', { action: 'copy-select-start', href: '#/copy/select' }) + button('공유 맵에 링크 등록', { href: '#/todo/UI-03/3-2', variant: 'secondary' }) +
+      button('내 개인 맵에서 복제', { action: 'copy-select-start', href: '#/copy/select' }) + button('공유 맵에 링크 등록', { action: 'link-start', href: '#/links/new', variant: 'secondary' }) +
       html`<p class="caption">공유 맵에 넣은 장소는 ${map.memberIds.map((id) => userName(state, id)).join(', ')}에게 보여요.</p>`) + '</section>';
 }
 
@@ -129,6 +129,6 @@ export function mapScreen(state) {
   return (state.ui.sheet === 'copy' ? '<div inert>' : '') + '<div class="map-page">' + mapHeader(state, map, maps, !!allPlaces.length && !state.ui.mapError, !places.length) +
     '<main class="map-content' + (state.ui.view === 'list' ? ' list-content' : '') + '">' + content + '</main>' +
     (state.ui.sheet === 'maps' ? '<button type="button" class="map-switch-scrim" data-action="close-sheet" aria-label="맵 전환 닫기"></button>' : '') +
-    (!state.ui.sheet && places.length && !state.ui.mapError && !state.ui.selectionMode ? button('+ 링크 등록', { href: '#/todo/UI-03/3-1', variant: 'floating' }) : '') + tabBar() + '</div>' +
+    (!state.ui.sheet && places.length && !state.ui.mapError && !state.ui.selectionMode ? button('+ 링크 등록', { action: 'link-start', href: '#/links/new', variant: 'floating' }) : '') + tabBar() + '</div>' +
     (state.ui.sheet === 'copy' ? '</div>' + copySheet({ ...state, currentMapId: map.id }) : '');
 }

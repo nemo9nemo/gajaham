@@ -3,6 +3,7 @@ import { cancelCode, confirmConnect, issueCode, redeemCode } from './logic/code.
 import { hasActiveShared, switchMap, visibleMaps } from './logic/maps.js';
 import { buildCopyDraft, copySources, copyTargets, executeCopy, retryFailed } from './logic/copy.js';
 import { findAccessiblePlace, updatePlaceInfo, updateLocation, toggleWant, toggleVisited, trashPlace, restorePlace } from './logic/place-edit.js';
+import { reduceCompleteAction } from './logic/complete-actions.js';
 
 const placeHash = (id) => `#/place/${encodeURIComponent(id)}`;
 const resetTransient = { copyPick: [], editDraft: null, undo: null, copyScope: null };
@@ -191,7 +192,7 @@ function reduceDomainAction(state, action, value) {
     }
     case 'directions': return updateUi(state, { notice: '외부 지도 앱 연결은 아직 준비 중이에요' });
     case 'retry-map': return updateUi(state, { mapError: false });
-    default: return state;
+    default: return reduceCompleteAction(state, action, value);
   }
 }
 
