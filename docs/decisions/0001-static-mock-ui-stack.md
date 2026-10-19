@@ -8,7 +8,7 @@
 
 저장소에는 기획 문서와 목업 `beta_mock-up.html`만 있고 앱 코드는 없다. 목업은 디자인 도구에서 내보낸 번들이라 그대로 앱 코드로 쓸 수 없다. 이번 단계의 목표는 서버·계정·DM 연동 없이 P0 화면과 화면 사이 이동을 목 데이터로 확인하는 것이다.
 
-구현은 Codex가 `workspace-write` + `windows.sandbox="unelevated"` 샌드박스에서 한다. 이 샌드박스는 자식 프로세스 생성을 막을 수 있고(spawn EPERM) 패키지 설치용 네트워크를 보장하지 않는다(docs/development/claude-codex-workflow.md).
+구현은 Codex가 `workspace-write` + `windows.sandbox="unelevated"` 샌드박스에서 한다. 이 샌드박스는 자식 프로세스 생성을 막을 수 있고(spawn EPERM) 패키지 설치용 네트워크를 보장하지 않는다([현재 작업 절차](../development/codex-workflow.md)).
 
 ## 결정
 
