@@ -79,9 +79,10 @@ export function executeCopy(state, draft, userId = state.currentUserId) {
       } : place);
       return { ...item, targetPlaceId: target.id, outcome: sources.length ? 'source-added' : 'unchanged' };
     }
-    const baseId = `${draft.targetMapId}--${sourceId}`;
-    let id = baseId;
-    for (let suffix = 2; places.some((place) => place.id === id); suffix += 1) id = `${baseId}-${suffix}`;
+    // Public IDs must not carry private map IDs through a chain of copies.
+    let suffix = 1;
+    while (places.some((place) => place.id === `copied-place-${suffix}`)) suffix += 1;
+    const id = `copied-place-${suffix}`;
     places.push(copiedPlace(source, draft.targetMapId, id, extras, userId, checked.draft.direction));
     return { ...item, targetPlaceId: id, outcome: 'new' };
   });
