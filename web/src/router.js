@@ -54,7 +54,11 @@ export function parseRoute(hash = '') {
   if (item) {
     try {
       const pattern = `/${item[1]}/:id${item[3] ? `/${item[3]}` : ''}`;
-      if (Object.hasOwn(ROUTES, pattern)) return { path: pattern, params: { id: decodeURIComponent(item[2]) } };
+      if (Object.hasOwn(ROUTES, pattern)) {
+        const mode = new URLSearchParams(query).get('mode');
+        return { path: pattern, params: { id: decodeURIComponent(item[2]),
+          ...(item[3] === 'search' && ['add', 'resolve'].includes(mode) ? { mode } : {}) } };
+      }
     } catch { /* Invalid encoded IDs follow the existing fallback. */ }
   }
   if (todo) {

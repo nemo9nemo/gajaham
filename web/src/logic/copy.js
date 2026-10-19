@@ -75,9 +75,9 @@ export function executeCopy(state, draft, userId = state.currentUserId) {
     if (target) {
       const sources = [];
       for (const entry of source.sources) {
-        const url = entry.url && parseIntakeUrl(entry.url)?.url;
+        const url = entry.url && parseIntakeUrl(entry.url)?.key;
         if (![...target.sources, ...sources].some((existing) => existing.id === entry.id ||
-            url && existing.url && parseIntakeUrl(existing.url)?.url === url)) sources.push(entry);
+            url && existing.url && parseIntakeUrl(existing.url)?.key === url)) sources.push(entry);
       }
       if (sources.length) places = places.map((place) => place.id === target.id ? {
         ...target, sources: [...target.sources, ...structuredClone(sources)],

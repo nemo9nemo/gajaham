@@ -6,7 +6,7 @@ import { parseIntakeUrl, submitIntake, processIntake, resolveJob, findJob, owned
 import { leaveSharedMap } from '../src/logic/settings.js';
 import { buildCopyDraft, executeCopy } from '../src/logic/copy.js';
 import { reduceAction } from '../src/store.js';
-import { renderRoute } from '../src/router.js';
+import { renderRoute, parseRoute } from '../src/router.js';
 import { issueCode, confirmConnect } from '../src/logic/code.js';
 import { updatePlaceInfo, updateLocation, trashPlace } from '../src/logic/place-edit.js';
 import { demoSearchOptions } from '../src/logic/complete-actions.js';
@@ -14,7 +14,7 @@ import { demoSearchOptions } from '../src/logic/complete-actions.js';
 const submit = (state, target = 'both', url = 'instagram.com/p/[단위-시연]') => submitIntake(state, url, target, { template: demoPlace('soup') });
 
 test('링크는 정규화하고 위험한 프로토콜·인증 정보·공백 입력을 거부한다', () => {
-  assert.deepEqual(parseIntakeUrl('  www.instagram.com/reel/demo/?tracking=1  '), { url: 'instagram.com/reel/demo', originalUrl: 'www.instagram.com/reel/demo/?tracking=1', supported: true });
+  assert.deepEqual(parseIntakeUrl('  www.instagram.com/reel/demo/?tracking=1  '), { url: 'instagram.com/reel/demo', key: 'instagram.com/reel/demo', originalUrl: 'www.instagram.com/reel/demo/?tracking=1', supported: true });
   assert.equal(parseIntakeUrl('blog.example/post').supported, false);
   assert.equal(parseIntakeUrl('instagram.com.evil.example/p/demo').supported, false);
   for (const value of ['', 'javascript:alert(1)', 'ftp://example.invalid/a', 'data:text/plain,hello', 'https://user:password@example.invalid/a', 'place name', 'localhost']) assert.equal(parseIntakeUrl(value), null, value);
@@ -433,4 +433,71 @@ test('SHA 리뷰 회귀: 수동 선택 카드 삭제 후 재시도는 재선택�
   const saved = resolveJob(state, 'intake-1', branchCandidates()[0], { manual: true });
   assert.equal(saved.job.stage, 'saved');
   assert.equal(saved.job.reselectionRequired, false);
+});
+
+test('SHA R2 회귀: 부분 저장된 수동 장소는 과거 보완의 재분석으로 바뀌지 않는다', () => {
+  let state = createScenario('inbox-unreadable');
+  state = changeJobTargets(state, 'intake-1', 'both').state;
+  state = supplementJob(state, 'intake-1', { text: '본문 보완' });
+  state.mock.intakeFailMapIds = ['shared-ab'];
+  const selected = resolveJob(state, 'intake-1', branchCandidates()[0], { manual: true });
+  state = reduceAction(selected.state, 'route-params', { id: 'intake-1' });
+  state = reduceAction(state, 'job-reanalyze');
+  assert.deepEqual(findJob(state, 'intake-1'), selected.job);
+  state.mock = { ...state.mock, intakeFailMapIds: [] };
+  const retried = processIntake(state, 'intake-1');
+  assert.ok(retried.job.results.every((result) => retried.state.places.find((place) => place.id === result.placeId).name === branchCandidates()[0].name));
+});
+
+test('SHA R2 회귀: 다른 항목의 연결 검색을 거쳐도 이전 여러 장소 검색의 추가 모드를 유지한다', () => {
+  let state = createScenario('inbox-demo');
+  const multiple = state.intake.jobs.find((job) => job.unresolvedNames?.length);
+  const unreadable = state.intake.jobs.find((job) => job.analysis === 'unreadable');
+  state = reduceAction(state, 'route-params', { id: multiple.id });
+  state = reduceAction(state, 'job-add-place');
+  state = reduceAction(state, 'route-params', { id: unreadable.id });
+  state = reduceAction(state, 'job-find-place');
+  state = reduceAction(state, 'route-params', { id: multiple.id });
+  state = reduceAction(state, 'job-resolve', '0');
+  assert.equal(findJob(state, multiple.id).unresolvedNames.length, 1);
+  assert.equal(findJob(state, multiple.id).childIds.length, 1);
+});
+
+test('SHA R2 회귀: 포트·프로토콜·호스트·경로가 다른 미지원 URL은 각각의 출처로 보존한다', () => {
+  const urls = ['https://blog.example:8443/post', 'https://blog.example:9443/post', 'http://blog.example/post',
+    'https://blog.example/post', 'https://www.blog.example/post', 'https://blog.example/post/'];
+  let state = createScenario('connected');
+  let placeId;
+  for (const url of urls) {
+    const request = submitIntake(state, url, 'shared-ab');
+    const saved = resolveJob(request.state, request.job.id, demoPlace(), { manual: true });
+    assert.equal(saved.job.results[0].outcome, 'source-added');
+    placeId = saved.job.results[0].placeId;
+    state = saved.state;
+  }
+  const sourceUrls = state.places.find((place) => place.id === placeId).sources.map((source) => source.url);
+  for (const url of urls) assert.ok(sourceUrls.includes(url));
+});
+
+test('검색 경로로 돌아오면 같은 항목에서 나중에 선택한 모드보다 그 경로의 모드를 따른다', () => {
+  let state = createScenario('inbox-multiple');
+  state = reduceAction(state, 'route-params', { id: 'intake-1' });
+  state = reduceAction(state, 'job-add-place');
+  const addSearch = state.ui.navigateTo;
+  state = reduceAction(state, 'job-find-place');
+  state = reduceAction(state, 'route-params', parseRoute(addSearch).params);
+  state = reduceAction(state, 'job-resolve', '0');
+  assert.equal(findJob(state, 'intake-1').unresolvedNames.length, 1);
+  assert.equal(findJob(state, 'intake-1').childIds.length, 1);
+});
+
+test('부분 성공 후 과거 수동 검색으로 돌아와 다른 장소를 골라도 기존 확정 정보를 바꾸지 않는다', () => {
+  let state = createScenario('inbox-unreadable');
+  state = changeJobTargets(state, 'intake-1', 'both').state;
+  state.mock.intakeFailMapIds = ['shared-ab'];
+  const first = resolveJob(state, 'intake-1', branchCandidates()[0], { manual: true });
+  const changed = resolveJob(first.state, 'intake-1', demoPlace(), { manual: true });
+  assert.equal(changed.ok, false);
+  assert.equal(changed.reason, 'place-confirmed');
+  assert.deepEqual(changed.state, first.state);
 });

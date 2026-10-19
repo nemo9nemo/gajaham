@@ -8,9 +8,11 @@ export function parseIntakeUrl(value = '') {
     const parsed = new URL(text.includes('://') ? text : 'https:' + '//' + text);
     if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password || !parsed.hostname.includes('.')) return null;
     const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+    const authority = host + (parsed.port ? ':' + parsed.port : '');
     const path = parsed.pathname.replace(/\/$/, '');
-    const supported = host === 'instagram.com' && /^\/(p|reel)\/[^/]+$/.test(path);
-    return { url: host + path + (supported ? '' : parsed.search + parsed.hash), originalUrl: text, supported };
+    const supported = host === 'instagram.com' && !parsed.port && /^\/(p|reel)\/[^/]+$/.test(path);
+    const url = authority + path + (supported ? '' : parsed.search + parsed.hash);
+    return { url, key: supported ? url : parsed.href, originalUrl: text, supported };
   } catch { return null; }
 }
 
@@ -69,7 +71,7 @@ function primarySaved(job) {
 
 function makeJob(state, source, mapIds, { origin = 'web', template = null, analysis = 'ready' } = {}) {
   return {
-    id: nextId(state.intake?.jobs ?? [], 'intake'), ownerId: state.currentUserId, sourceUrl: source.url, originalUrl: source.originalUrl,
+    id: nextId(state.intake?.jobs ?? [], 'intake'), ownerId: state.currentUserId, sourceUrl: source.url, sourceKey: source.key, originalUrl: source.originalUrl,
     origin, requestedMapIds: [...mapIds], targetMapIds: [...mapIds], results: [],
     stage: source.supported ? 'processing' : 'unsupported', analysis: source.supported ? analysis : 'unsupported',
     template: template ? structuredClone(template) : null, deleted: false, supplement: '', captureAdded: false,
@@ -132,7 +134,7 @@ export function processIntake(state, id) {
     return { ok: false, reason: 'needs-reselection', job: findJob(nextState, id), state: nextState };
   }
   if (job.analysis !== 'ready' || !job.template) return { ok: false, reason: 'needs-confirmation', state };
-  if (!parseIntakeUrl(job.sourceUrl)?.supported && !job.manual) return { ok: false, reason: 'unsupported', state };
+  if (!parseIntakeUrl(job.originalUrl ?? job.sourceUrl)?.supported && !job.manual) return { ok: false, reason: 'unsupported', state };
   let places = [...state.places];
   const results = [...job.results.filter((result) => result.status === 'saved' && !job.targetMapIds.includes(result.mapId)), ...job.targetMapIds.map((mapId) => {
     const previous = job.results.find((result) => result.mapId === mapId && result.status === 'saved');
@@ -143,13 +145,14 @@ export function processIntake(state, id) {
     const identity = intakePlaceIdentity(source);
     const sameLink = places.find((place) => place.mapId === mapId && !place.trashed &&
       (source.placeKey ? place.placeKey === source.placeKey : intakePlaceIdentity(place) === identity) &&
-      [place.sourceUrl, ...place.sources.map((entry) => entry.url)].some((url) => url && parseIntakeUrl(url)?.url === job.sourceUrl));
+      [place.sourceUrl, ...place.sources.map((entry) => entry.url)].some((url) => url && parseIntakeUrl(url)?.key ===
+        (job.sourceKey ?? parseIntakeUrl(job.originalUrl ?? job.sourceUrl)?.key)));
     if (sameLink) return { mapId, status: 'saved', placeId: sameLink.id, outcome: 'unchanged' };
     const selectedPlace = job.manual && source.mapId === mapId ? places.find((place) =>
       place.mapId === mapId && !place.trashed && place.id === source.existingPlaceId) : null;
     const samePlace = selectedPlace ?? (source.placeKey && source.locationStatus === 'confirmed' ? places.find((place) =>
       place.mapId === mapId && !place.trashed && place.locationStatus === 'confirmed' && place.placeKey === source.placeKey) : null);
-    const entry = { id: `source-${job.id}`, url: job.originalUrl ?? job.sourceUrl, kind: parseIntakeUrl(job.sourceUrl)?.supported ? (job.sourceUrl.includes('/reel/') ? '릴스' : '게시물') : '링크',
+    const entry = { id: `source-${job.id}`, url: job.originalUrl ?? job.sourceUrl, kind: parseIntakeUrl(job.originalUrl ?? job.sourceUrl)?.supported ? (job.sourceUrl.includes('/reel/') ? '릴스' : '게시물') : '링크',
       senderId: job.ownerId, savedAt: '[저장 날짜]' };
     if (samePlace) {
       places = places.map((place) => place.id === samePlace.id ? { ...place,
@@ -179,6 +182,7 @@ export function resolveJob(state, id, template, { manual = null } = {}) {
   const job = findJob(state, id);
   if (!job || !template?.name?.trim()) return { ok: false, reason: 'needs-place', state };
   if (job.stage === 'saved' || job.primaryComplete) return { ok: false, reason: 'already-saved', state };
+  if (!job.reselectionRequired && job.results.some((result) => result.status === 'saved')) return { ok: false, reason: 'place-confirmed', state };
   const isManual = manual ?? job.analysis !== 'ambiguous';
   const existing = isManual ? findAccessiblePlace(state, template.id) : null;
   const existingPlaceId = existing?.mapId === template.mapId &&
@@ -186,7 +190,8 @@ export function resolveJob(state, id, template, { manual = null } = {}) {
   const selected = isManual ? { ...structuredClone(template), menu: null, tip: null, hasImage: false,
     existingPlaceId,
     summary: '사용자가 직접 연결한 장소예요. 게시물 내용을 분석한 결과가 아니에요.' } : structuredClone(template);
-  const prepared = replaceJob(state, { ...job, template: selected, manual: isManual, analysis: 'ready', stage: 'processing', reselectionRequired: false });
+  const prepared = replaceJob(state, { ...job, template: selected, manual: isManual, placeConfirmed: true,
+    analysis: 'ready', stage: 'processing', reselectionRequired: false });
   return processIntake(prepared, id);
 }
 

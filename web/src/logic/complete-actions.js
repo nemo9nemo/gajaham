@@ -97,24 +97,28 @@ export function reduceCompleteAction(state, action, value) {
       return result.ok ? go(result.state, resultPath(id)) : failed(state);
     }
     case 'job-search': return ui(state, { resolveQuery: value });
-    case 'job-add-place': return findJob(state, id) ? go(state, jobPath(id, '/search'), { resolveMode: 'add', resolveQuery: '' }) : state;
-    case 'job-find-place': return findJob(state, id) ? go(state, jobPath(id, '/search'), { resolveMode: 'resolve', resolveQuery: '' }) : state;
+    case 'job-add-place': return findJob(state, id) ? go(state, jobPath(id, '/search?mode=add'), {
+      resolveModes: { ...state.ui.resolveModes, [id]: 'add' }, resolveQuery: '' }) : state;
+    case 'job-find-place': return findJob(state, id) ? go(state, jobPath(id, '/search?mode=resolve'), {
+      resolveModes: { ...state.ui.resolveModes, [id]: 'resolve' }, resolveQuery: '' }) : state;
     case 'job-resolve': {
       const template = demoSearchOptions(state, state.ui.resolveQuery)[Number(value)];
       if (!template) return state;
-      const result = state.ui.resolveMode === 'add' ? addJobPlace(state, id, template) : resolveJob(state, id, template, { manual: true });
-      return result.ok ? go(result.state, state.ui.resolveMode === 'add' ? jobPath(id, '/multiple') : resultPath(id)) : failed(state);
+      const mode = state.ui.params?.mode ?? state.ui.resolveModes?.[id] ?? (findJob(state, id)?.unresolvedNames?.length ? 'add' : 'resolve');
+      const result = mode === 'add' ? addJobPlace(state, id, template) : resolveJob(state, id, template, { manual: true });
+      return result.ok ? go(result.state, mode === 'add' ? jobPath(id, '/multiple') : resultPath(id)) : failed(state,
+        result.reason === 'place-confirmed' ? '이미 저장한 장소를 유지해요. 실패한 대상만 다시 저장해 주세요.' : undefined);
     }
     case 'job-supplement': return supplementJob(state, id, { text: value });
     case 'job-capture': return ui(supplementJob(state, id, { capture: true }), { notice: '캡처 보완을 선택했어요. 이 목업은 파일을 업로드하지 않아요.' });
     case 'job-reanalyze': {
       const job = findJob(state, id);
       if (job?.reselectionRequired) return go(state, jobPath(id, '/no-place'));
-      if (job?.primaryComplete || job?.stage === 'saved') return go(state,
+      if (job && (job.primaryComplete || job.stage === 'saved' || job.placeConfirmed || job.manual || job.results.some((result) => result.status === 'saved'))) return go(state,
         job.childIds?.length || job.unresolvedNames?.length ? jobPath(id, '/multiple') : resultPath(id),
         { notice: '이미 저장한 결과를 유지했어요.' });
       if (!job || (!job.supplement.trim() && !job.captureAdded)) return failed(state, '본문이나 캡처 보완을 먼저 추가해 주세요.');
-      if (!parseIntakeUrl(job.sourceUrl)?.supported) return failed(state, '이 출처는 분석 미지원이에요. 장소를 직접 연결해 주세요.');
+      if (!parseIntakeUrl(job.originalUrl ?? job.sourceUrl)?.supported) return failed(state, '이 출처는 분석 미지원이에요. 장소를 직접 연결해 주세요.');
       const jobs = state.intake.jobs.map((item) => item.id === id ? { ...item, stage: 'processing', analysis: 'ready', template: demoPlace() } : item);
       return go({ ...state, intake: { ...state.intake, jobs } }, jobPath(id), { notice: '시연 데이터로 처리 결과를 확인할 수 있어요.' });
     }
