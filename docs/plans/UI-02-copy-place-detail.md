@@ -1,6 +1,6 @@
 # UI-02 초기 복제·다른 맵에 복제 + 장소 상세
 
-- 상태: DONE (2026-10-16, 리뷰 2라운드 APPROVED 후 커밋)
+- 상태: DONE (2026-10-19, 비공개 맵 ID 노출 수정·90개 테스트·독립 Codex 구현 리뷰 APPROVED, 사용자 승인으로 Claude 대기 해소)
 - 작성: Claude / 날짜: 2026-10-15
 - 구현 브랜치: codex/UI-02-copy-place-detail
 - 선행 조건: 충족. UI-01은 PR nemo9nemo/gajaham#2로 main에 병합됐다(2026-10-15, main = origin/main = f22d47c). 최신 main에서 브랜치를 만든다. 이 브리프 파일은 UI-02 브랜치로 옮겨 함께 커밋한다.
@@ -191,7 +191,7 @@ placeKey: `pb-cafe`·`shared-cafe` = `seongsu-cafe`, `pb-soup`·`shared-soup` = 
 - `executeCopy(state, draft, userId)`: 실행 직전에 `buildCopyDraft`와 같은 검사를 다시 한다(권한 재확인). 실패면 `{ ok: false, reason, state }`(state는 입력 그대로). 통과하면 `draft.placeIds` 순서대로 장소마다:
   1. `state.mock.copyFailIds`에 있으면 `failed`(상태 변경 없음).
   2. 대상 맵의 활성 장소 중 같은 장소를 찾는다: 원본이 확정이고 `placeKey`가 같은 확정 장소, 또는 `copyOf === 원본 id`인 장소. 찾으면 원본 `sources` 중 대상에 없는 출처(id 기준)만 더한다. 더한 것이 있으면 `source-added`(history에 `source-added` 추가), 없으면 `unchanged`. 기존 장소의 `name`·`category`·`menu`·`tip`·`memo`·`photos`·`visit`·`wantBy`·`pin`·`locationStatus`·`edits`는 바꾸지 않는다.
-  3. 없으면 새 장소 `new`: 대상 맵에 겹치지 않는 id(`<targetMapId>--<원본 id>`, 겹치면 `-2`, `-3`…)로 만든다. 장소 기본 정보(`name, category, region, locationStatus, pin, placeKey, summary, menu, tip, sources, sourceUrl, sourceAccess, hasImage`)를 복사하고, `wantBy: []`, `edits: {}`, `trashed: false`, `copyOf: 원본 id`, `savedBy: 원본 savedBy`, 대상이 공유 맵이면 `senderId: userId`, `history: [{ type: 'copied', actorId: userId, originalSaverId: 원본 savedBy, at: '[날짜]' }]`. 원본 맵 id·이름은 넣지 않는다. 추가 정보: `extras.memo`면 `memo`(개인→공유는 `authorId: userId`, 공유→개인은 원래 작성자 유지) 아니면 `null`, `extras.photos`면 `photos` 아니면 `0`, `extras.visits`(개인→공유만)면 `visit === 'visited'`일 때만 `'visited'` 아니면 `null`. `visit: 'want'`과 `wantBy`는 복사하지 않는다. 미확정 원본은 `locationStatus 'unconfirmed'`, `pin null` 그대로다.
+  3. 없으면 새 장소 `new`: 원본·대상 맵 id나 원본 장소 id를 조합하지 않는 별도 id(`copied-place-<순번>`, 휴지통을 포함한 전체 장소와 중복되지 않는 첫 순번)로 만든다. 장소 기본 정보(`name, category, region, locationStatus, pin, placeKey, summary, menu, tip, sources, sourceUrl, sourceAccess, hasImage`)를 복사하고, `wantBy: []`, `edits: {}`, `trashed: false`, `copyOf: 원본 id`, `savedBy: 원본 savedBy`, 대상이 공유 맵이면 `senderId: userId`, `history: [{ type: 'copied', actorId: userId, originalSaverId: 원본 savedBy, at: '[날짜]' }]`. 복제 관계는 내부 `copyOf`로만 유지하고 공개 id·공유 화면의 링크·속성에 원본 맵 id·이름을 넣지 않는다. 추가 정보: `extras.memo`면 `memo`(개인→공유는 `authorId: userId`, 공유→개인은 원래 작성자 유지) 아니면 `null`, `extras.photos`면 `photos` 아니면 `0`, `extras.visits`(개인→공유만)면 `visit === 'visited'`일 때만 `'visited'` 아니면 `null`. `visit: 'want'`과 `wantBy`는 복사하지 않는다. 미확정 원본은 `locationStatus 'unconfirmed'`, `pin null` 그대로다.
   - 원본 장소는 바뀌지 않는다. 반환: `{ ok: true, state, result: { targetMapId, items: [{ sourceId, name, outcome: 'new' | 'source-added' | 'unchanged' | 'failed', unconfirmed, targetPlaceId }], total, done } }`(`done` = failed가 아닌 수). `state.copy.result`에도 넣는다.
 - `retryFailed(state, result, userId)`: `failed` 항목만 같은 원본·대상으로 다시 `executeCopy`하고, 성공 항목은 다시 처리하지 않는다. 이전 결과의 성공 항목과 새 결과를 합친 결과를 돌려준다.
 
@@ -316,14 +316,14 @@ placeKey: `pb-cafe`·`shared-cafe` = `seongsu-cafe`, `pb-soup`·`shared-soup` = 
 
 ## 완료 기준
 
-- [ ] `node --test --test-isolation=none "web/tests/*.test.mjs"` 전부 통과(UI-01 기존 테스트 포함)
-- [ ] `node web/scripts/check-screens.mjs` exit 0, `30개 화면 확인` 출력
-- [ ] `web/package.json`에 의존성이 없고 `node_modules`·lock 파일이 없다. `web/` 안에 `http(s)://` 외부 리소스 참조가 없다
-- [ ] `web/src`에 `todo/UI-02`가 없다
-- [ ] 카탈로그의 30개 화면이 390×844에서 가로 스크롤 없이 열리고 13개 새 화면의 배치가 목업 `.ph`와 맞는다(리뷰 때 Claude가 브라우저로 확인)
-- [ ] 클릭 흐름: 1-8 → 2-1 → 2-2 → 2-4 → 2-6 → 공유 맵, 4-4 선택 → 2-3 → 2-4, 4-2 자세히 → 6-1 → 다른 맵에 복제 → 2-5 → 결과, 6-2 → 6-4 저장, 6-3 → 6-5 저장 후 지도에 핀, 6-6 삭제 → 되돌리기
-- [ ] 실패 경로: 일부 실패 후 실패 항목만 재복제, 비활성 공유 맵으로 복제 거부, 다른 참여자 개인 장소 접근 거부, 반복 복제로 장소 수가 늘지 않음
-- [ ] user-b로 보는 어떤 화면에도 사용자 A의 개인 맵·장소가 없고, 공유 맵 쪽 화면에 원본 개인 맵 이름이 없다. 개인 추가 정보는 기본 해제이고 관심 표시는 복제되지 않는다
+- [x] `node --test --test-isolation=none "web/tests/*.test.mjs"` 전부 통과(UI-01 기존 테스트 포함): 2026-10-19 **90/90**
+- [x] `node web/scripts/check-screens.mjs` exit 0, `30개 화면 확인` 출력: 2026-10-19 재확인
+- [x] `web/package.json`에 의존성이 없고 `node_modules`·lock 파일이 없다. `web/` 안에 `http(s)://` 외부 리소스 참조가 없다: 2026-10-19 재확인
+- [x] `web/src`에 `todo/UI-02`가 없다: 2026-10-19 재확인
+- [x] 카탈로그의 30개 화면이 390×844에서 가로 스크롤 없이 열리고 13개 새 화면의 배치가 목업 `.ph`와 맞는다: UI-01 2라운드(17개)·아래 UI-02 1라운드(13개)의 2026-10-15 브라우저 증거. 2026-10-19에는 브라우저 시각 검사를 재실행하지 않음
+- [x] 클릭 흐름: 1-8 → 2-1 → 2-2 → 2-4 → 2-6 → 공유 맵, 4-4 선택 → 2-3 → 2-4, 4-2 자세히 → 6-1 → 다른 맵에 복제 → 2-5 → 결과, 6-2 → 6-4 저장, 6-3 → 6-5 저장 후 지도에 핀, 6-6 삭제 → 되돌리기: 아래 1라운드의 브라우저 증거와 현재 Node 이벤트·렌더 회귀 검사
+- [x] 실패 경로: 일부 실패 후 실패 항목만 재복제, 비활성 공유 맵으로 복제 거부, 다른 참여자 개인 장소 접근 거부, 반복 복제로 장소 수가 늘지 않음: 2026-10-19 회귀 검사 통과
+- [x] user-b로 보는 어떤 화면에도 사용자 A의 개인 맵·장소가 없고, 공유 맵 쪽 화면에 원본 개인 맵 이름이 없다. 개인 추가 정보는 기본 해제이고 관심 표시는 복제되지 않는다: 2026-10-19 회귀 검사 통과, 후속 공개 ID 노출 문제도 수정
 
 ## 검증 명령
 
@@ -460,9 +460,43 @@ Get-ChildItem : 'web/pnpm-lock.yaml' 인수를 허용하는 위치 매개 변수
 
 - 없음. 허용된 PowerShell 환경 설정과 검사 대체만 적용했다. 참고 항목·범위 밖 파일·리뷰 판정·완료 기준은 변경하지 않았고 커밋하지 않았다.
 
+### 후속 지적 조치 — 비공개 원본 맵 ID (2026-10-19)
+
+사용자 요청: 남은 지적 조치와 UI-02 수정·재리뷰. 대상은 `tmp/codex/review-codex-UI-02-copy-place-detail-d6bacb7.md`의 P2 1건이다.
+
+**재현·변경 파일**
+
+- `web/src/logic/copy.js`: 공유 장소를 개인 맵으로 복제 → 공유 원본 삭제 → 개인 복제본을 공유 맵으로 재복제하면 `shared-ab--personal-b--shared-wine`이 공개 링크·`data-id`에 렌더되는 문제를 확인했다. 새 공개 ID는 원본·맵 ID를 조합하지 않는 별도 순번으로 만들고, 휴지통을 포함한 기존 ID와의 충돌을 피한다. 입력 불변성과 `copyOf` 기반 중복 판정은 유지한다.
+- `web/tests/copy.test.mjs`: 새 공개 ID에 원본·맵 ID가 없음을 확인하고, 휴지통 재복제 시 ID 유일성·원본 관계 보존을 검사한다.
+- `web/tests/screens.test.mjs`: 위 왕복 경로와 기존 형식의 개인 복제본 ID를 가진 경우를 모두 재현한다. 사용자 A의 지도·목록·결과·상세·이력·편집·위치 화면 전체 마크업(링크·속성 포함)에 사용자 B의 개인 맵 ID가 없고, 반복 복제 시 장소가 늘지 않음을 검사한다.
+- 이 브리프: 기존 ID 조합 명세가 비공개 규칙과 충돌하므로 사용자가 요청한 지적 조치에 맞춰 `executeCopy`의 새 ID 규칙을 정정했다. 재리뷰가 끝나기 전 상태를 `REVIEWING`으로 표시한다.
+
+**실행 명령과 결과** (Codex 런타임 Node v24.19.0)
+
+- 수정 전 재현: `node --test --test-isolation=none --test-reporter=spec --test-name-pattern='새 복제는 입력|공유 원본 삭제 후' web/tests/copy.test.mjs web/tests/screens.test.mjs` → **exit 1, 2개 실패**. 원본 ID가 새 ID에 포함되고 지도 마크업에 `personal-b`가 노출됨을 확인했다.
+- 수정 후 `node --test --test-isolation=none --test-reporter=spec web/tests/copy.test.mjs` → **exit 0, 11/11 통과**. 새 화면 회귀 테스트 단독 실행도 **1/1 통과**.
+- `node --test --test-isolation=none "web/tests/*.test.mjs"` (TAP 출력 저장) → **exit 0, 90/90 통과, fail 0, skipped 0**. 로컬 서버 검사에 대한 기존 샌드박스 `EACCES`를 피하기 위해 자동 승인된 제한 밖 실행을 사용했다. 로그: `tmp/codex/UI-02-private-id-tests-2026-10-19.log`.
+- `node web/scripts/check-screens.mjs` → **exit 0, 30개 화면 정합 통과**.
+- `node --check web/src/main.js`, `node --check web/src/logic/copy.js` → **각 exit 0**.
+- PowerShell 대체 검사 `rg -n 'https?://' web/src web/styles web/index.html`, `rg -n 'todo/UI-02' web/src` → **일치 없음**. `Test-Path`로 `web/node_modules`·두 lock 파일 모두 없음, `web/package.json` 의존성 없음 확인.
+- `git diff --check` → **exit 0, 공백 오류 없음**.
+
+**미실행·범위**
+
+- 브라우저 시각·포인터 검사는 이번 수정에서 실행하지 않았다. 화면·스타일 변경 없이 공개 ID 생성과 회귀 테스트만 수정했으며, 기존 Claude 브라우저 확인 기록을 보존한다.
+- Claude 구현 재리뷰를 실제 시도했지만 **미실행**이다. Claude Code가 API 요청 단계에서 **403 `oauth_not_allowed_for_organization`**(조직에서 Claude 구독의 Code 접근 비활성화)을 반환해 입력·출력 토큰과 도구 실행이 모두 0이었다. 리뷰 판정이나 APPROVED로 취급하지 않는다. 결과: `tmp/codex/UI-02-private-id-claude-review-2026-10-19.json`.
+- 이후 별도 Codex CLI 읽기 전용 세션에서 `codex exec -s read-only --ephemeral review --uncommitted`로 현재 수정의 독립 재리뷰를 수행했다. **exit 0, 수정이 필요한 결함 없음**. 리뷰어도 전체 테스트 **90/90**과 카탈로그 **30개** 정합 통과를 직접 확인했다. 결과: `tmp/codex/UI-02-private-id-codex-review-2026-10-19.md`와 `.stderr.log`. 새 소스·테스트 변경은 이 결과 이후 추가하지 않았으며 이 보고에 실행 결과만 갱신했다.
+- Claude 승인 조건이 충족되지 않아 **커밋·push·PR은 하지 않았다**. 이번 Codex 리뷰는 미커밋 변경 대상이므로 커밋 SHA 리뷰 통과 장부(`tmp/codex/reviewed.txt`)에 기록하지 않는다. Claude 접근 복구 후 구현 리뷰를 받거나, 사용자에게 이번 건의 대체 리뷰 승인을 받은 뒤 로컬 커밋·해당 SHA의 push 전 Codex 리뷰가 필요하다.
+
+### 사용자 후속 승인과 작업 절차 변경 (2026-10-19)
+
+- 위 대기 보고 이후 사용자가 “응. 앞으로 클로드 사용하지 않을거야. 스스로 전부 마무리 해.”라고 승인했다. 이번 Codex 구현 리뷰를 대체 승인하며, 이후 기획·구현·검증·리뷰·로컬 커밋도 Codex가 맡도록 변경했다. 위 Claude 승인 대기는 해소됐다.
+- 사용자 요청에 따라 별도 절차 변경으로 `AGENTS.md`, `CLAUDE.md`, `docs/development/codex-workflow.md`, 기존 분업 문서와 Git 절차, 브리프 양식·README, 결정 0001의 절차 링크를 갱신하고 `docs/decisions/0002-codex-only-workflow.md`에 결정을 기록한다. 이 변경은 원래 구현 범위에 대한 사용자 추가 지시다. 제품 기획·정적 목업 스택은 바꾸지 않는다.
+- 코드·테스트는 위 독립 Codex 리뷰 이후 변경하지 않았다. 아래 후속 구현 리뷰 기록을 APPROVED로 남기고 절차 변경과 기능 수정을 별도 로컬 커밋으로 구분한다. 최종 커밋 SHA의 `main` 대비 전체 브랜치 리뷰 결과는 `tmp/codex/` 결과 파일과 `reviewed.txt`로 관리한다. push·PR은 요청 전까지 진행하지 않는다.
+
 ## 리뷰 기록
 
-(Claude가 작성) 라운드별 판정 APPROVED | WARNING | BLOCKED와 지적 항목.
+(과거 Claude 기록 보존, 2026-10-19 이후 Codex 독립 리뷰) 라운드별 판정 APPROVED | WARNING | BLOCKED와 지적 항목.
 
 ### 1라운드 — WARNING (2026-10-15, Claude)
 
@@ -505,3 +539,11 @@ Get-ChildItem : 'web/pnpm-lock.yaml' 인수를 허용하는 위치 매개 변수
 - 브라우저 확인과 구현 경계 판단은 1라운드 결과를 유지한다(이번 라운드에 화면 코드 변경 없음).
 
 **판정**: WARNING 1 해소. 1라운드 '참고' 항목은 사용자 판단으로 남긴다.
+
+### 후속 ID 노출 수정 — APPROVED (2026-10-19, Codex 독립 리뷰)
+
+- 리뷰 대상: 기존 HEAD `d6bacb7` 이후의 공개 ID 생성 수정과 복제·화면 회귀 테스트. 별도 읽기 전용 Codex CLI 세션에서 `review --uncommitted` 실행, exit 0.
+- 판정 근거: 리뷰 결과는 “수정이 필요한 결함은 발견하지 못했습니다.”였다. 리뷰어가 전체 테스트 **90/90**, 카탈로그 **30개** 정합 통과를 직접 확인했다. 결과 파일: `tmp/codex/UI-02-private-id-codex-review-2026-10-19.md`.
+- P2 해소: 공개 ID에 원본·맵 ID를 이어 붙이지 않는다. 공유 원본 삭제 후 재복제, 과거 형식의 개인 복제본 ID, 다른 참여자의 지도·상세·이력·링크·속성 비노출, 중복·휴지통 충돌 회귀 검사를 통과했다. 원본·입력 불변성과 복제 계보 판정은 유지한다.
+- 사용자 승인: 같은 날짜의 후속 지시로 Codex 리뷰 대체와 향후 Codex 단독 작업을 승인했다. Claude 승인은 더 이상 대기 조건이 아니다.
+- 미실행: 이번 수정의 브라우저 시각·포인터 검사는 재실행하지 않았다. 화면·스타일 변경은 없고 기존 브라우저 리뷰 증거를 유지한다. 커밋 후 SHA 기준 전체 브랜치 리뷰는 별도로 실행하고 결과·장부를 `tmp/codex/`에 남긴다.

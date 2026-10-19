@@ -9,6 +9,8 @@ import { SCENARIOS, createScenario } from '../src/data/scenarios.js';
 import { createStore, reduceAction } from '../src/store.js';
 import { CODE_STATUS, UNUSABLE_CODE_MESSAGE, cancelCode } from '../src/logic/code.js';
 import { createStaticServer } from '../scripts/serve.mjs';
+import { buildCopyDraft, executeCopy } from '../src/logic/copy.js';
+import { trashPlace } from '../src/logic/place-edit.js';
 
 const EXPECTED = {
   '1-1': ['가자함', '첫 링크 저장하기', '로그인', 'DM으로 전달하거나 링크 입력', '게시물·릴스를 서비스 계정에 DM으로 보내거나 링크를 붙여 넣으면, 확인할 수 있는 내용에서 장소와 게시물 내용을 정리해 내 맵에 보관해요.'],
@@ -78,6 +80,43 @@ test('공유 결과·상세·이력은 비공개 원본 맵 이름과 ID를 표�
   }
   const files = readdirSync(new URL('../src/', import.meta.url), { recursive: true }).filter((file) => file.endsWith('.js'));
   for (const file of files) assert.ok(!readFileSync(new URL(`../src/${file.replaceAll('\\', '/')}`, import.meta.url), 'utf8').includes('todo/UI-02'), file);
+});
+
+test('공유 원본 삭제 후 재복제해도 상대방 화면의 링크·속성에 개인 맵 ID가 없다', () => {
+  for (const legacyId of [null, 'personal-b--shared-wine']) {
+    let state = createScenario('connected');
+    const first = executeCopy(state, buildCopyDraft(state, {
+      sourceMapId: 'shared-ab', targetMapId: 'personal-b', placeIds: ['shared-wine'],
+    }).draft);
+    assert.equal(first.result.items[0].outcome, 'new');
+    state = first.state;
+    let personalId = first.result.items[0].targetPlaceId;
+    if (legacyId) {
+      state.places.find((place) => place.id === personalId).id = legacyId;
+      personalId = legacyId;
+    }
+    state = trashPlace(state, 'shared-wine');
+    const next = executeCopy(state, buildCopyDraft(state, {
+      sourceMapId: 'personal-b', targetMapId: 'shared-ab', placeIds: [personalId],
+    }).draft);
+    assert.equal(next.result.items[0].outcome, 'new');
+    const sharedId = next.result.items[0].targetPlaceId;
+    assert.equal(next.state.places.find((place) => place.id === sharedId).copyOf, personalId);
+    const viewer = { ...next.state, currentUserId: 'user-a', currentMapId: 'shared-ab' };
+    for (const route of ['#/map', '#/map?view=list', '#/copy/result',
+      ...['', '/history', '/edit', '/location'].map((suffix) => `#/place/${encodeURIComponent(sharedId)}${suffix}`)]) {
+      const markup = renderRoute(viewer, route);
+      assert.match(markup, /예시 와인바/);
+      assert.doesNotMatch(markup, /personal-b|내 개인 맵/, route);
+      if (route.includes('/place/')) assert.doesNotMatch(markup, new RegExp(personalId), route);
+    }
+    const repeat = executeCopy(next.state, buildCopyDraft(next.state, {
+      sourceMapId: 'personal-b', targetMapId: 'shared-ab', placeIds: [personalId],
+    }).draft);
+    assert.equal(repeat.result.items[0].outcome, 'unchanged');
+    assert.equal(repeat.result.items[0].targetPlaceId, sharedId);
+    assert.equal(repeat.state.places.length, next.state.places.length);
+  }
 });
 
 test('미리보기 왕복의 close-sheet는 선택과 두 체크박스의 체크 상태를 보존한다', () => {

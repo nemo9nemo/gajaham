@@ -43,6 +43,8 @@ test('새 복제는 입력·원본·DM 기본 위치를 유지하고 개인 추�
     assert.deepEqual(place.wantBy, []);
     assert.deepEqual(place.edits, {});
     assert.equal(place.senderId, 'user-b');
+    assert.ok(!place.id.includes(item.sourceId));
+    assert.doesNotMatch(place.id, /personal-b|shared-ab/);
     assert.doesNotMatch(JSON.stringify(place), /personal-b|내 개인 맵/);
   }
   const bakery = placeById(result.state, result.result.items[1].targetPlaceId);
@@ -211,13 +213,17 @@ test('공유→개인은 읽을 수 있는 메모 작성자와 사진만 선택�
   assert.equal(copied.savedBy, 'user-a');
 });
 
-test('휴지통은 중복 후보에서 빠지고 ID가 겹치면 새 접미사를 쓴다', () => {
+test('휴지통은 중복 후보에서 빠지고 새 복제는 기존 ID를 재사용하지 않는다', () => {
   const state = createScenario('copy-initial');
   const draft = draftFor(state, ['pb-bakery']).draft;
   const first = executeCopy(state, draft);
   const oldId = first.result.items[0].targetPlaceId;
   placeById(first.state, oldId).trashed = true;
   const next = executeCopy(first.state, draft);
-  assert.equal(next.result.items[0].targetPlaceId, `${oldId}-2`);
+  const nextId = next.result.items[0].targetPlaceId;
+  assert.notEqual(nextId, oldId);
+  assert.equal(new Set(next.state.places.map((place) => place.id)).size, next.state.places.length);
+  assert.equal(placeById(next.state, oldId).trashed, true);
+  assert.equal(placeById(next.state, nextId).copyOf, 'pb-bakery');
   assert.equal(activePlaces(next.state, 'shared-ab').length, 2);
 });
