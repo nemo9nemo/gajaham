@@ -2,3 +2,11 @@ tmp/
 .env
 .env.*
 !.env.example
+android/.gradle/
+android/.kotlin/
+android/.idea/
+android/**/build/
+android/local.properties
+android/*.jks
+android/*.keystore
+android/signing.properties

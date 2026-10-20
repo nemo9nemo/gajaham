@@ -22,3 +22,5 @@ Kotlin·Compose·Room·WorkManager, Google Play 우선 배포, 제한적인 AdMo
 ## 구현과 검증 상태
 
 현재는 정적 목업 58개 화면이다. Android 설치 파일·실제 로그인·DM·DB·광고 연동·스토어 제출·마케팅 집행은 이번 검토로 수행하거나 완료되지 않았다. 출시 검사의 증거를 확보할 때까지 서비스 출시 준비 완료로 표시하지 않는다.
+
+2026-10-20 후속: [결정 0004](0004-android-local-core.md)에 따라 [APP-01](../plans/APP-01-android-local-core.md) Android 개인 저장 기반을 구현한다. 위 상태는 10월 19일 기획 검토 시점의 기록이며, 이후 구현·검사는 APP-01 증거를 따른다.

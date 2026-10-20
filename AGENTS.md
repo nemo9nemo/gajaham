@@ -4,7 +4,7 @@
 
 한국어로 소통한다. 가자함은 인스타그램 DM·링크로 받은 장소를 개인 맵과 두 사람의 공유 맵에 모으는 서비스다. 개발의 기준 경로는 C:\Users\love0\nemo9Dev\gajaham이다.
 
-현재는 기획과 정적 목업 UI 구현 단계다. Git 저장소와 `web/` 소스가 있으며 실제 로그인·DM·DB 연동은 아직 없다. 기획 기준은 docs의 기획 문서(docs/personal-shared-map-plan-2026-10-12.md, docs/planning-review-2026-10-12.md)와 .planning-staging의 제품 기획·로드맵·시장 조사다. 요구·설계 파일 작성과 기능 구현·검증 완료를 구분한다. 구현되지 않은 기능과 실행하지 않은 검사를 완료로 표시하지 않는다.
+현재는 정적 목업과 로그인 없는 Android 개인 저장 앱 개발 단계다. Git 저장소·`web/`·`android/` 소스가 있으며 Android 로컬 Room DB를 구현하고 실제 로그인·DM·서버 DB 연동은 아직 없다. 기획 기준은 docs의 기획 문서(docs/personal-shared-map-plan-2026-10-12.md, docs/planning-review-2026-10-12.md)와 .planning-staging의 제품 기획·로드맵·시장 조사다. 요구·설계 파일 작성과 기능 구현·검증 완료를 구분한다. 구현되지 않은 기능과 실행하지 않은 검사를 완료로 표시하지 않는다.
 
 2026-10-19 최신 출시 요구는 1차 로그인 제외·2차 실제 로그인, 갤럭시 우선, 광고 수익화다. 출시 보완·제품·기술·마케팅 제안은 docs/release/galaxy-launch-plan-2026-10-19.md와 docs/decisions/0003-galaxy-release-direction.md를 함께 본다. 세부 단계 배치·스택·예산·목표는 제안이며 Android 구현·출시 완료를 뜻하지 않는다.
 
@@ -28,6 +28,8 @@
 - 연결 코드는 만료·취소·사용 완료 상태를 갖고, 재발급 시 이전 코드를 무효화한다. 코드 입력만으로 기록을 열지 않고 로그인과 연결 확인을 거친다.
 - 웹의 현재 맵 전환으로 DM 기본 저장 위치를 바꾸지 않는다.
 
+2026-10-20 APP-01부터 `android/`에 로그인 없는 개인 저장 앱을 구현한다. Kotlin·Compose·Room으로 공유 링크·기기 내 영속 저장·수동 장소 확정·파일 백업/복원·휴지통을 다룬다. 실제 지도·자동 검색/분석·광고·로그인·공유 서버·DM은 후속이며 목업으로 연동 완료를 대신하지 않는다. 결정·브리프는 docs/decisions/0004-android-local-core.md, docs/plans/APP-01-android-local-core.md다. `web/`의 패키지 금지는 정적 목업에 계속 적용한다.
+
 ## 산출물과 검증
 
 정적 목업 UI는 `web/`에 있고 P0 58개 화면 카탈로그와 목 데이터 상태 전이를 제공하는 의존성 없는 HTML·CSS·ES 모듈이다(docs/decisions/0001-static-mock-ui-stack.md). 패키지를 추가하지 않는다. Node는 Codex 런타임 v24 기준이다. 실제 로그인·DM·분석·DB 연동과 정적 목업의 동작을 구분한다.
@@ -35,6 +37,12 @@
 - 단위·화면 테스트: `node --test --test-isolation=none "web/tests/*.test.mjs"`
 - 카탈로그 정합: `node web/scripts/check-screens.mjs`
 - 미리보기: `node web/scripts/serve.mjs` → http://localhost:5173/#/catalog (390×844 기준)
+
+Android는 JDK 17·Gradle Wrapper 8.13·SDK/target 36·minSdk 29를 사용한다. 실행 환경은 android/README.md, 로컬 도구 선택은 android/scripts/check.ps1을 따른다.
+
+- Android 검사·빌드: `./android/scripts/check.ps1` 또는 `android/gradlew.bat -p android :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --no-daemon`
+- JVM 도메인 검사와 Robolectric Android 로컬 검사를 실기기·에뮬레이터 검사와 구분한다. 실제 지도·공유 앱·파일 제공자·One UI 검사는 기기별 증거가 있어야 완료다.
+- Android SDK·캐시·서명 키·로컬 경로와 빌드 산출물은 Git에 넣지 않는다. release 빌드는 실제 출시 서명·심사 완료를 뜻하지 않는다.
 
 ## 환경과 보안
 
