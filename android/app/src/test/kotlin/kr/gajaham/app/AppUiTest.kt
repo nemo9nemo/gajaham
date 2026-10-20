@@ -100,4 +100,26 @@ class AppUiTest {
         assertEquals("edit", model.state.value.route)
         compose.onNodeWithTag("place-name").assertTextContains("작성 중인 이름")
     }
+
+    @Test fun pendingLinkCanBeTrashedAndRestoredWithoutInventingAPlace() {
+        loaded()
+        model.capture("https://instagram.com/p/UNWANTED", shared = true)
+        compose.waitUntil(20_000) { model.state.value.records.size == 1 && !model.state.value.busy }
+        compose.onNodeWithText("장소 확인이 필요한 링크").performClick()
+        compose.onNodeWithTag("editor-list").performScrollToNode(hasTestTag("discard-record"))
+        compose.onNodeWithTag("discard-record").performClick()
+        compose.onNodeWithText("이동").performClick()
+        compose.waitUntil(20_000) { model.state.value.records.single().trashedAt != null && !model.state.value.busy }
+        assertEquals("inbox", model.state.value.route)
+        assertEquals(false, model.state.value.records.single().confirmed)
+        model.navigate("trash")
+        compose.waitForIdle()
+        compose.onNodeWithText("복원").performClick()
+        compose.waitUntil(20_000) { model.state.value.records.single().trashedAt == null && !model.state.value.busy }
+        model.navigate("inbox")
+        compose.waitForIdle()
+        compose.onNodeWithText("장소 확인이 필요한 링크").assertIsDisplayed()
+        assertEquals("https://instagram.com/p/UNWANTED", model.state.value.records.single().sourceUrl)
+        assertEquals("", model.state.value.records.single().name)
+    }
 }

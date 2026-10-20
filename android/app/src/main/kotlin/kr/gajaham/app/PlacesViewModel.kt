@@ -84,7 +84,10 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
         mutable.update { it.copy(route = "detail", selectedId = savedId, notice = "장소를 저장했어요.") }
     }
     fun visited(id: String) = work { repository.toggleVisited(id); refresh() }
-    fun trash(id: String) = work { repository.trash(id); refresh(); navigate("home"); report("휴지통으로 옮겼어요.") }
+    fun trash(id: String) = work {
+        val destination = if (mutable.value.records.find { it.id == id }?.confirmed == true) "home" else "inbox"
+        repository.trash(id); refresh(); navigate(destination); report("휴지통으로 옮겼어요.")
+    }
     fun restore(id: String) = work { repository.restore(id); refresh(); report("기록을 복원했어요.") }
     fun deletePermanently(id: String) = work { repository.deletePermanently(id); refresh(); report("기록을 영구 삭제했어요.") }
     fun clear() = work {

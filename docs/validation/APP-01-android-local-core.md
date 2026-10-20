@@ -23,6 +23,7 @@
 | A17 | 편집 중 새 공유·이전 접수의 늦은 완료 | 편집 유지, 최신 공유만 완료 판정 | AppUiTest + ShareReceiptsTest |
 | A18 | 기존 휴지통 만료 후 활성 백업 가져오기 | 만료 기록으로 정상 백업을 중복 처리하지 않음 | RepositoryTest |
 | A19 | 대문자 scheme 출처 열기 | 원본은 보존하고 실행 URI만 소문자로 정규화 | AppUiTest |
+| A20 | 미확정 링크 개별 삭제·복원 | 이름/주소를 임의로 확정하지 않고 처리함→휴지통→처리함 이동 | AppUiTest |
 | G01 | 실제 Galaxy Instagram 공유·재부팅·업데이트 | 유실·잘못된 완료 안내 없음 | 미실행 · 기기 필요 |
 | G02 | 실제 파일 제공자별 생성·실패·가져오기 | 성공 시 파일 복구, 실패 시 원본 유지 | 미실행 · 기기/제공자 필요 |
 | G03 | 지도 앱 미설치·잘못된 주소·원본 접근 불가 | 안전한 안내와 정상 복귀 | 미실행 · 기기 필요 |
@@ -30,7 +31,7 @@
 
 ## 실행 기록
 
-`APP-01-tests-r6.log`와 최신 전체 `APP-01-build-final.log`에서 core 18개·Robolectric Android 17개, 총 35개 통과·실패/스킵 0을 확인했다. A01~A13/A15~A19의 자동화 범위가 해당하며 A14는 debug APK·R8 unsigned release APK 빌드·min29/target36·권한·lint 결과로 확인했다. 실제 외부 지도 앱·파일 제공자·실기기 상호작용 전체를 로컬 검사로 대신하지 않는다.
+`APP-01-tests-r6.log`와 `APP-01-build-final.log`의 35개 통과 이후, 최초 커밋 재리뷰에서 미확정 개별 삭제 누락을 발견해 A20을 추가했다. 최신 전체 `APP-01-build-sha-fix.log`는 core 18개·Robolectric Android 18개, 총 **36개 통과·실패/오류/스킵 0**이다. A01~A13/A15~A20의 자동화 범위가 해당하며 A14는 debug APK·R8 unsigned release APK 빌드·min29/target36·권한·lint 결과로 확인했다. 실제 외부 지도 앱·파일 제공자·실기기 상호작용 전체를 로컬 검사로 대신하지 않는다.
 
 lint 오류 0·경고 7(새 의존성 버전 안내 6, URI KTX 스타일 1). `personal-place.png`를 Native Graphics로 렌더하고 직접 확인해 한국어·저장 내용·버튼 잘림이 없음을 확인했다. SDK 35의 Robolectric 검사이며 target36 Android 16·실제 Galaxy·에뮬레이터 검사는 미실행이다. Android 연결 기기는 0대였다.
 

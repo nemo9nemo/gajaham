@@ -1,6 +1,6 @@
 # APP-01 로그인 없는 Android 개인 저장 기반
 
-- 상태: DONE · 개인 저장 기반 구현·35개 로컬 검사·최신 APK/lint·독립 구현 리뷰 완료 · 실제 출시와 구분
+- 상태: DONE · 개인 저장 기반·36개 로컬 검사·debug/R8 unsigned release/lint·독립 구현 리뷰 완료 · 실제 출시와 구분
 - 작성: Codex / 2026-10-20
 - 구현 브랜치: `codex/APP-01-android-local-core`
 - 참조: [출시 기획](../release/galaxy-launch-plan-2026-10-19.md), [결정 0004](../decisions/0004-android-local-core.md)
@@ -58,9 +58,9 @@
 
 초기 실패와 수정: r1 Android 직접 의존성 누락 수정; r2~r4의 AndroidViewModelFactory 전역 Application 혼입을 명시적 Activity factory·초기화와 테스트 DB 분리로 해결; r5는 기능 단언은 통과하고 PixelCopy 화면 캡처만 실패했으며 r6에서 해결. 실패 로그는 `tmp/codex/APP-01-*.log`에 보존한다. 검사를 약화하거나 실패를 통과로 표시하지 않는다.
 
-최신 전체 `./android/scripts/check.ps1`은 `tmp/codex/APP-01-build-final.log`에서 **BUILD SUCCESSFUL**로 완료됐다. core 18개·Android 17개, debug APK·R8 release unsigned APK·lintDebug/lintVitalRelease를 확인했다. lint는 오류 0·경고 7(검증된 조합보다 새 버전이 있다는 의존성 안내 6, URI KTX 스타일 제안 1)이다. 검증한 조합을 고정했고 최신 버전을 사용한다고 표시하지 않는다.
+최신 전체 `./android/scripts/check.ps1`은 `tmp/codex/APP-01-build-sha-fix.log`에서 **BUILD SUCCESSFUL**로 완료됐다. core 18개·Android 18개(저장소 10/화면 5/공유 3), 총 36개 실패·오류·스킵 0이며 debug APK·R8 release unsigned APK·lintDebug/lintVitalRelease를 확인했다. lint는 오류 0·경고 7(검증된 조합보다 새 버전이 있다는 의존성 안내 6, URI KTX 스타일 제안 1)이다. 검증한 조합을 고정했고 최신 버전을 사용한다고 표시하지 않는다.
 
-APK: `android/app/build/outputs/apk/debug/app-debug.apk` (29,650,991 bytes), `android/app/build/outputs/apk/release/app-release-unsigned.apk`. 실제 파일 크기는 재빌드에 따라 바뀔 수 있다. 최종 debug SHA-256은 `A19640B4BAAC19DB25D75DDEBDB37D128F84D411BCAAAC386390D6C6553D381E`다. APK badging에서 minSdk 29/target 36, 권한은 앱 전용 DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION만 확인했다. 네트워크·위치·광고 ID 권한은 없다. 최종 미리보기 포트 5174는 비활성이며 연결된 Android 기기는 0대였다.
+APK: `android/app/build/outputs/apk/debug/app-debug.apk` (29,654,751 bytes), `android/app/build/outputs/apk/release/app-release-unsigned.apk`. 실제 파일 크기는 재빌드에 따라 바뀔 수 있다. 최종 debug SHA-256은 `BADC50EBD658E602AA28695A8549010B5F4663F6AB3D459E646AA2EAB1575D08`다. APK badging에서 minSdk 29/target 36, 권한은 앱 전용 DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION만 확인했다. 네트워크·위치·광고 ID 권한은 없다. 최종 미리보기 포트 5174는 비활성이며 연결된 Android 기기는 0대였다.
 
 추가 산출물 검사: `apksigner verify --verbose`의 debug 서명과 `zipalign -c -P 16 4`의 ZIP 16KiB 정렬을 확인했다. 이는 실제 기기의 설치·실행·모든 네이티브 ELF 호환성 검사까지 수행했다는 의미는 아니다.
 
@@ -71,3 +71,5 @@ APK: `android/app/build/outputs/apk/debug/app-debug.apk` (29,650,991 bytes), `an
 1. r1 `APP-01-implementation-review-r1.md`: P1 1건·P2 4건. 미확정 복귀/지도 실행, 공유 완료 상태 복원, 편집 중 공유, 만료 휴지통의 가져오기, 대문자 URI 실행을 수정하고 회귀 검사를 추가했다.
 2. r2 `APP-01-implementation-review-r2.md`: 앞선 5건 해소 확인, r5 캡처 검사 실패 1건. Native Graphics 캡처로 수정하여 r6 총 35개를 통과했다.
 3. r3 `APP-01-implementation-review-r3.md`: **APPROVED**. 캡처 수정·35개 통과·debug/R8 unsigned release·lint·APK 크기/해시·실기기 미실행 표기가 일치하며 새 지적이 없음을 확인했다. 커밋 SHA 리뷰는 `tmp/codex/` 장부로 관리한다.
+4. 최초 커밋 `f0e2cdf`의 `APP-01-f0e2cdf-sha-review.md`: 미확정 링크 개별 삭제 경로 누락 P2. 처리함 편집기에 필수 입력과 무관한 휴지통 버튼·확인·복귀 경로를 추가하고, 미확정→휴지통→복원→처리함 회귀 검사로 총 36개를 통과했다. 해당 SHA는 통과 장부에 올리지 않는다.
+5. SHA 지적 조치 주기 `APP-01-sha-fix-implementation-review.md`: **APPROVED**, 새 지적 없음. 수정 커밋 SHA의 최종 재리뷰는 별도 장부로 관리한다.

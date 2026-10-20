@@ -89,7 +89,7 @@ fun GajahamApp(model: PlacesViewModel, openExternal: (String) -> Unit) {
                         manual = { model.navigate("edit") },
                     )
                     "add" -> AddLinks(state.failedSharedText, state.busy, { model.capture(it) }, { model.navigate("edit") })
-                    "edit" -> Editor(selected, state.busy, { name, address, memo, menu, category -> model.save(selected?.id, name, address, memo, menu, category) }, { editorDirty = it })
+                    "edit" -> Editor(selected, state.busy, { name, address, memo, menu, category -> model.save(selected?.id, name, address, memo, menu, category) }, { editorDirty = it }, { trashWarning = true })
                     "detail" -> if (selected != null && selected.trashedAt == null && selected.confirmed) PlaceDetail(selected, state.busy,
                         edit = { model.navigate("edit", selected.id) }, visited = { model.visited(selected.id) },
                         trash = { trashWarning = true }, openExternal = openExternal)
@@ -113,7 +113,7 @@ fun GajahamApp(model: PlacesViewModel, openExternal: (String) -> Unit) {
                 dismissButton = { TextButton(enabled = !state.busy, onClick = { model.cancelImport() }) { Text("취소") } })
         }
         if (clearWarning) ClearDialog(state.busy, { clearWarning = false }, { clearWarning = false; model.clear() })
-        if (trashWarning) ConfirmDialog("휴지통으로 이동", "30일이 지난 기록은 다음 실행 시 정리돼요.", "이동", { trashWarning = false }) {
+        if (trashWarning) ConfirmDialog("휴지통으로 이동", if (state.route == "edit" && editorDirty) "저장하지 않은 입력은 버려지고 원래 기록을 휴지통으로 옮겨요. 30일이 지난 기록은 다음 실행 시 정리돼요." else "30일이 지난 기록은 다음 실행 시 정리돼요.", "이동", { trashWarning = false }) {
             trashWarning = false; selected?.let { model.trash(it.id) }
         }
         permanentId?.let { id -> ConfirmDialog("영구 삭제", "이 기기의 기록을 되돌릴 수 없어요. 이미 내보낸 파일은 별도로 관리해 주세요.", "영구 삭제", { permanentId = null }) { permanentId = null; model.deletePermanently(id) } }
@@ -172,7 +172,7 @@ private fun AddLinks(failedText: String, busy: Boolean, capture: (String) -> Uni
 }
 
 @Composable
-private fun Editor(place: Place?, busy: Boolean, save: (String, String, String, String, Category) -> Unit, dirty: (Boolean) -> Unit) {
+private fun Editor(place: Place?, busy: Boolean, save: (String, String, String, String, Category) -> Unit, dirty: (Boolean) -> Unit, trash: () -> Unit) {
     var name by rememberSaveable(place?.id) { mutableStateOf(place?.name.orEmpty()) }
     var address by rememberSaveable(place?.id) { mutableStateOf(place?.address.orEmpty()) }
     var memo by rememberSaveable(place?.id) { mutableStateOf(place?.memo.orEmpty()) }
@@ -192,6 +192,7 @@ private fun Editor(place: Place?, busy: Boolean, save: (String, String, String, 
             items(Category.entries) { value -> FilterChip(selected = category == value.name, onClick = { category = value.name }, label = { Text(value.label) }) }
         } }
         item { Button(enabled = !busy && name.isNotBlank() && address.isNotBlank(), onClick = { save(name, address, memo, menu, Category.valueOf(category)) }, modifier = Modifier.fillMaxWidth().testTag("save-place")) { Text("장소 저장") } }
+        if (place != null) item { TextButton(enabled = !busy, onClick = trash, modifier = Modifier.testTag("discard-record")) { Text("휴지통으로 이동", color = MaterialTheme.colorScheme.error) } }
     }
 }
 

@@ -16,4 +16,4 @@ UI-ALL은 UI-03(링크 등록·처리함)과 UI-04(약속·설정)의 계획 범
 
 | 작업 | 범위 | 상태 |
 | --- | --- | --- |
-| [APP-01](APP-01-android-local-core.md) | 로그인 없는 공유 접수·Room 영속 저장·수동 확정·개인 기록·파일 백업·휴지통 | DONE · 35개 검사·debug/R8 unsigned release APK·lint·독립 구현 리뷰 완료 · 실제 지도/광고/로그인/DM/실기기/출시와 구분 |
+| [APP-01](APP-01-android-local-core.md) | 로그인 없는 공유 접수·Room 영속 저장·수동 확정·개인 기록·파일 백업·휴지통 | DONE · 36개 검사·debug/R8 unsigned release APK·lint·독립 구현 리뷰·미확정 삭제 지적 조치 완료 · 실제 지도/광고/로그인/DM/실기기/출시와 구분 |
