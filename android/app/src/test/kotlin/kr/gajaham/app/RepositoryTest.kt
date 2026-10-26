@@ -1,6 +1,7 @@
 package kr.gajaham.app
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import java.time.Clock
@@ -10,7 +11,10 @@ import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import kr.gajaham.app.data.LocalDatabase
+import kr.gajaham.app.data.LocalMigrations
 import kr.gajaham.app.data.PlaceRepository
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kr.gajaham.core.*
 import org.junit.After
 import org.junit.Assert.*
@@ -33,11 +37,50 @@ class RepositoryTest {
         context.deleteDatabase("repository-test.db")
         db = open(); repo = PlaceRepository(db, clock)
     }
-    private fun open() = Room.databaseBuilder(context, LocalDatabase::class.java, "repository-test.db").allowMainThreadQueries().build()
+    private fun open() = Room.databaseBuilder(context, LocalDatabase::class.java, "repository-test.db")
+        .addMigrations(LocalMigrations.SOURCE_KEYS_1_2).allowMainThreadQueries().build()
     @After fun teardown() { db.close(); context.deleteDatabase("repository-test.db") }
     private fun confirm() {
         val id = repo.snapshot().first().id
         repo.save(id, "가상 카페", "서울 가상로 1", "꼭 먹을 메뉴", "커피", Category.CAFE)
+    }
+
+    private fun reopenVersionOneWithLegacyPortKey(): Place {
+        db.close(); context.deleteDatabase("repository-test.db")
+        val original = Places.pending("https://instagram.com:8443/p/LEGACY?variant=1#part", clock.time)
+            .copy(name = "기존 카페", address = "서울 가상로 1", memo = "사용자 메모", visited = true)
+        SQLiteDatabase.openOrCreateDatabase(context.getDatabasePath("repository-test.db"), null).use { old ->
+            old.execSQL("CREATE TABLE places (id TEXT NOT NULL, canonicalSource TEXT, payload TEXT NOT NULL, createdAt INTEGER NOT NULL, trashedAt INTEGER, PRIMARY KEY(id))")
+            old.execSQL("CREATE UNIQUE INDEX index_places_canonicalSource ON places(canonicalSource)")
+            old.execSQL("CREATE TABLE room_master_table (id INTEGER PRIMARY KEY, identity_hash TEXT)")
+            old.execSQL("INSERT INTO room_master_table VALUES (42, '0d53ed534da2da43cc3d0a5c0176099a')")
+            old.execSQL("INSERT INTO places VALUES (?, ?, ?, ?, NULL)", arrayOf<Any?>(original.id,
+                "https://www.instagram.com/p/LEGACY", Json.encodeToString(original), original.createdAt))
+            old.version = 1
+        }
+        db = open(); repo = PlaceRepository(db, clock)
+        return original
+    }
+
+    @Test fun versionOnePortKeyMigratesBeforeCaptureWithoutChangingUserData() {
+        val original = reopenVersionOneWithLegacyPortKey()
+        assertEquals(1, repo.capture("https://instagram.com/p/LEGACY").added)
+        assertEquals(original, repo.snapshot().first { it.id == original.id })
+        assertEquals(original.canonicalSource, db.places().find(original.id).canonicalSource)
+        assertEquals(2, repo.snapshot().size)
+        assertEquals(1, repo.capture(original.sourceUrl!!).existing)
+        db.close(); db = open(); repo = PlaceRepository(db, clock)
+        assertEquals(2, repo.snapshot().size)
+    }
+
+    @Test fun versionOnePortKeyMigratesBeforeImportWithoutUniqueConflict() {
+        val original = reopenVersionOneWithLegacyPortKey()
+        val incoming = Places.pending("https://instagram.com/p/LEGACY", clock.time)
+        val backup = Backup("gajaham-local-backup", 1, clock.time, listOf(incoming))
+        assertEquals(1, repo.import(backup).additions.size)
+        assertEquals(original, repo.snapshot().first { it.id == original.id })
+        assertEquals(setOf(original.canonicalSource, incoming.canonicalSource), db.places().all().map { it.canonicalSource }.toSet())
+        assertEquals(2, Backups.decode(repo.export()).records.size)
     }
 
     @Test fun receptionSurvivesDatabaseCloseAndReopen() {

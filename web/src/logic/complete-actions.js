@@ -89,10 +89,11 @@ export function reduceCompleteAction(state, action, value) {
       const result = changeJobTargets(state, id, jobTargetChoice(state, job));
       return result.ok ? go(result.state, jobPath(id), { notice: '이 항목의 저장 대상을 바꿨어요' }) : failed(state);
     }
-    case 'job-branch': return ui(state, { selectedBranch: value });
+    case 'job-branch': return findJob(state, id) && branchCandidates()[Number(value)]
+      ? ui(state, { selectedBranch: value, selectedBranchJobId: id }) : state;
     case 'job-save-branch': {
       const template = branchCandidates()[Number(state.ui.selectedBranch)];
-      if (state.ui.selectedBranch === null || !template) return failed(state, '지점을 먼저 골라 주세요.');
+      if (state.ui.selectedBranchJobId !== id || state.ui.selectedBranch === null || !template) return failed(state, '지점을 먼저 골라 주세요.');
       const result = resolveJob(state, id, template);
       return result.ok ? go(result.state, resultPath(id)) : failed(state);
     }

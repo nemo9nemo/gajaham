@@ -69,12 +69,13 @@ export function jobResolveScreen(state) {
   const job = getJob(state);
   if (!job) return missingItem();
   const candidates = branchCandidates();
+  const selectedBranch = state.ui.selectedBranchJobId === job.id ? state.ui.selectedBranch : null;
   return flowPage(appBar('장소 확인', { back: path(job.id) }), '<span class="status-chip warn">확인 필요</span><h1>어느 지점인가요?</h1>' +
     '<p>게시물에서 ‘예시 파스타’를 찾았지만 같은 이름의 지점이 2곳이에요.</p><p class="caption">고르기 전에는 지도에 핀을 만들지 않아요.</p>' +
     '<div class="stack" role="radiogroup" aria-label="지점 후보">' + candidates.map((place, index) =>
-      html`<button type="button" class="candidate-option card ${state.ui.selectedBranch === String(index) ? 'selected' : ''}" role="radio" aria-checked="${state.ui.selectedBranch === String(index)}" data-action="job-branch" data-id="${index}"><strong>${place.name}</strong><span class="caption">${place.region}</span><span class="caption">차이: ${place.difference}</span></button>`).join('') + '</div>' +
+      html`<button type="button" class="candidate-option card ${selectedBranch === String(index) ? 'selected' : ''}" role="radio" aria-checked="${selectedBranch === String(index)}" data-action="job-branch" data-id="${index}"><strong>${place.name}</strong><span class="caption">${place.region}</span><span class="caption">차이: ${place.difference}</span></button>`).join('') + '</div>' +
     button('둘 다 아니에요 · 장소 검색', { action: 'job-find-place', variant: 'text' }) + mapNames(state, job),
-    button('이 지점으로 저장', { action: 'job-save-branch', disabled: state.ui.selectedBranch === null }), 'complete-page');
+    button('이 지점으로 저장', { action: 'job-save-branch', disabled: selectedBranch === null }), 'complete-page');
 }
 
 export function jobSearchScreen(state) {

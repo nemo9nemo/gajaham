@@ -5,6 +5,8 @@
 - 구현 브랜치: `codex/APP-01-android-local-core`
 - 참조: [출시 기획](../release/galaxy-launch-plan-2026-10-19.md), [결정 0004](../decisions/0004-android-local-core.md)
 
+2026-10-26 후속: [FIX-LAUNCH-01](FIX-LAUNCH-01-save-integrity.md)에서 비기본 포트 출처의 중복 판정·기존 DB 키 마이그레이션을 수정하고 전체 Android 검사 39개·빌드를 통과했다. 아래 36개 검사·APK 해시는 10월 20일 APP-01 완료 당시 기록이며 최신 재빌드 산출물과 구분한다.
+
 ## 목표
 
 로그인 없이 Android 공유 메뉴와 직접 입력으로 링크를 접수하고 기기 내 DB에 보존한다. 장소를 직접 확정·수정·방문 표시하고, 삭제·복원·JSON 파일 백업·가져오기를 실행할 수 있는 네이티브 앱과 설치 가능한 디버그 APK를 만든다.

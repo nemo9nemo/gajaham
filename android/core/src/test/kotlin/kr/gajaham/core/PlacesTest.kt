@@ -20,6 +20,20 @@ class PlacesTest {
         assertEquals("https://example.com/a%2Fb?id=1#section", Links.canonical("https://EXAMPLE.com:443/a%2Fb?id=1#section"))
         assertNotEquals(Links.canonical("https://example.com/#/place/1"), Links.canonical("https://example.com/#/place/2"))
     }
+    @Test fun instagramNonDefaultPortsKeepSeparateCaptureAndBackupIdentity() {
+        val standard = "https://instagram.com/p/A"
+        val custom = "https://instagram.com:8443/p/A?variant=1#part"
+        assertEquals(Links.canonical(standard), Links.canonical("https://instagram.com:443/p/A?igsh=x"))
+        assertEquals(Links.canonical(standard), Links.canonical("http://instagram.com:80/p/A"))
+        for (url in listOf(custom, "https://instagram.com:80/p/A?x=1", "http://instagram.com:443/p/A#part")) {
+            assertEquals(url, Links.canonical(url))
+            assertNotEquals(Links.canonical(standard), Links.canonical(url))
+        }
+        assertEquals(listOf(standard, custom), Links.extract("$standard $custom"))
+        val encoded = Backups.encode(listOf(place(standard), place(custom)), 2000)
+        val plan = Backups.plan(emptyList(), Backups.decode(encoded), 2000)
+        assertEquals(2, plan.additions.size); assertEquals(0, plan.duplicates)
+    }
     @Test fun credentialsUnsafeSchemesAndControlsAreRejected() {
         listOf("javascript:alert(1)", "file:///x", "https://user:secret@example.com", "https://", "https://example.com/\nfoo").forEach { fails { Links.validate(it) } }
     }

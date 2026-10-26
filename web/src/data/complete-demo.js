@@ -50,7 +50,7 @@ function addJob(state, kind, target = 'personal-b') {
 export function completeDemo(state, key) {
   state = { ...state, intake: { jobs: [], draft: { url: '', target: state.currentMapId } }, appointments: {},
     ui: { ...state.ui, activeJobId: null, inboxFilter: '전체', targetChoice: state.currentMapId, resolveQuery: '',
-      selectedBranch: null, replacementId: null, pendingCandidateId: null, dmChoice: state.dmDefaultTarget,
+      selectedBranch: null, selectedBranchJobId: null, replacementId: null, pendingCandidateId: null, dmChoice: state.dmDefaultTarget,
       settingsMapId: state.currentMapId, exportMapIds: [state.currentMapId],
     },
   };

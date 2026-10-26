@@ -13,6 +13,35 @@ import { demoSearchOptions } from '../src/logic/complete-actions.js';
 
 const submit = (state, target = 'both', url = 'instagram.com/p/[단위-시연]') => submitIntake(state, url, target, { template: demoPlace('soup') });
 
+test('지점 선택은 현재 처리 항목에만 적용하고 다른 항목 저장에 재사용하지 않는다', () => {
+  let state = createScenario('inbox-ambiguous');
+  const firstId = state.ui.activeJobId;
+  const second = submitIntake(state, 'instagram.com/p/second-ambiguous', 'personal-b', { analysis: 'ambiguous', template: demoPlace() });
+  const secondId = second.job.id;
+  state = { ...second.state, ui: { ...second.state.ui, params: { id: firstId } } };
+  state = reduceAction(state, 'job-branch', '1');
+  state = { ...state, ui: { ...state.ui, params: { id: secondId } } };
+  const unresolved = renderRoute(state, `#/inbox/${secondId}/resolve`);
+  assert.doesNotMatch(unresolved, /aria-checked="true"/);
+  assert.match(unresolved.match(/<button[^>]*data-action="job-save-branch"[^>]*>/)[0], /disabled/);
+  const blocked = reduceAction(state, 'job-save-branch');
+  assert.deepEqual(blocked.places, state.places);
+  assert.notEqual(findJob(blocked, secondId).stage, 'saved');
+  state = reduceAction(state, 'job-branch', '0');
+  state = reduceAction(state, 'job-save-branch');
+  const secondJob = findJob(state, secondId);
+  assert.equal(secondJob.stage, 'saved');
+  assert.equal(state.places.find((place) => place.id === secondJob.results[0].placeId).placeKey, branchCandidates()[0].placeKey);
+  state = { ...state, ui: { ...state.ui, params: { id: firstId } } };
+  const returned = renderRoute(state, `#/inbox/${firstId}/resolve`);
+  assert.doesNotMatch(returned, /aria-checked="true"/);
+  state = reduceAction(state, 'job-branch', '1');
+  state = reduceAction(state, 'job-save-branch');
+  const firstJob = findJob(state, firstId);
+  assert.equal(firstJob.stage, 'saved');
+  assert.equal(state.places.find((place) => place.id === firstJob.results[0].placeId).placeKey, branchCandidates()[1].placeKey);
+});
+
 test('링크는 정규화하고 위험한 프로토콜·인증 정보·공백 입력을 거부한다', () => {
   assert.deepEqual(parseIntakeUrl('  www.instagram.com/reel/demo/?tracking=1  '), { url: 'instagram.com/reel/demo', key: 'instagram.com/reel/demo', originalUrl: 'www.instagram.com/reel/demo/?tracking=1', supported: true });
   assert.equal(parseIntakeUrl('blog.example/post').supported, false);

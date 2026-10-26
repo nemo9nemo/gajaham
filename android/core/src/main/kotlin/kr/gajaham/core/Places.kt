@@ -51,11 +51,12 @@ object Links {
         val host = uri.host.lowercase()
         val instagram = host in setOf("instagram.com", "www.instagram.com", "m.instagram.com")
         val path = uri.rawPath.ifEmpty { "/" }
-        if (instagram && Regex("^/(p|reel|reels|tv)/[A-Za-z0-9_-]+/?$").matches(path)) {
+        val scheme = uri.scheme.lowercase()
+        val defaultPort = uri.port == -1 || (scheme == "https" && uri.port == 443) || (scheme == "http" && uri.port == 80)
+        if (instagram && defaultPort && Regex("^/(p|reel|reels|tv)/[A-Za-z0-9_-]+/?$").matches(path)) {
             return "https://www.instagram.com${path.trimEnd('/')}"
         }
-        val scheme = uri.scheme.lowercase()
-        val port = if ((scheme == "https" && uri.port == 443) || (scheme == "http" && uri.port == 80) || uri.port == -1) "" else ":${uri.port}"
+        val port = if (defaultPort) "" else ":${uri.port}"
         return "$scheme://$host$port$path${uri.rawQuery?.let { "?$it" }.orEmpty()}${uri.rawFragment?.let { "#$it" }.orEmpty()}"
     }
 

@@ -24,6 +24,8 @@
 | A18 | 기존 휴지통 만료 후 활성 백업 가져오기 | 만료 기록으로 정상 백업을 중복 처리하지 않음 | RepositoryTest |
 | A19 | 대문자 scheme 출처 열기 | 원본은 보존하고 실행 URI만 소문자로 정규화 | AppUiTest |
 | A20 | 미확정 링크 개별 삭제·복원 | 이름/주소를 임의로 확정하지 않고 처리함→휴지통→처리함 이동 | AppUiTest |
+| A21 | Instagram 기본/비기본 포트 URL 접수·백업 | HTTP 80/HTTPS 443 정규화 유지, 비기본 포트·쿼리·해시 구분, 서로 다른 두 출처 모두 보존 | PlacesTest · 2026-10-26 FIX-LAUNCH-01 |
+| A22 | 기존 잘못된 출처 키의 스키마 1 DB→2 업데이트 | 사용자 메모/방문/원본·시간 보존, 기본/비기본 URL 접수·가져오기·재열기·백업 성공 | RepositoryTest · 2026-10-26 FIX-LAUNCH-01 |
 | G01 | 실제 Galaxy Instagram 공유·재부팅·업데이트 | 유실·잘못된 완료 안내 없음 | 미실행 · 기기 필요 |
 | G02 | 실제 파일 제공자별 생성·실패·가져오기 | 성공 시 파일 복구, 실패 시 원본 유지 | 미실행 · 기기/제공자 필요 |
 | G03 | 지도 앱 미설치·잘못된 주소·원본 접근 불가 | 안전한 안내와 정상 복귀 | 미실행 · 기기 필요 |
@@ -36,3 +38,5 @@
 lint 오류 0·경고 7(새 의존성 버전 안내 6, URI KTX 스타일 1). `personal-place.png`를 Native Graphics로 렌더하고 직접 확인해 한국어·저장 내용·버튼 잘림이 없음을 확인했다. SDK 35의 Robolectric 검사이며 target36 Android 16·실제 Galaxy·에뮬레이터 검사는 미실행이다. Android 연결 기기는 0대였다.
 
 초기 r1~r5 실패와 수정 근거는 [APP-01 구현 보고](../plans/APP-01-android-local-core.md)에 남겼다. 정적 목업의 과거 검사 결과를 Android 검사 결과로 재사용하지 않았다.
+
+2026-10-26 후속: [FIX-LAUNCH-01](../plans/FIX-LAUNCH-01-save-integrity.md)에서 A21·A22를 추가하고 전체 `check.ps1`을 다시 실행했다. core 19개·Robolectric Android 20개, 총 **39개 통과·실패/오류/스킵 0**이며 debug/R8 unsigned release·lint 성공이다. G01~G04는 계속 미실행이다.
