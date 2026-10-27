@@ -22,11 +22,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val appModel = model
-        val handled = savedInstanceState?.getBoolean("shareCommitted") == true &&
-            savedInstanceState.getString("shareFingerprint") == shareFingerprint(intent)
-        if (handled) appModel.restoreShareCommitted()
+        val sameShare = savedInstanceState != null && savedInstanceState.getString("shareFingerprint") == shareFingerprint(intent) && shareFingerprint(intent) != null
+        val handled = sameShare && (appModel.sharedIntentHandled || savedInstanceState?.getBoolean("shareHandled") == true || savedInstanceState?.getBoolean("shareCommitted") == true)
+        if (handled) appModel.restoreShareHandled(appModel.sharedIntentOwner ?: savedInstanceState?.getString("shareOwner"), appModel.sharedIntentCommitted || savedInstanceState?.getBoolean("shareCommitted") == true)
         setContent { GajahamApp(appModel, ::openExternal) }
-        if (!handled) acceptShare(intent)
+        if (!handled) {
+            if (sameShare && savedInstanceState?.getString("shareOwner") == null) {
+                appModel.restoreShareHandled(null, false)
+                appModel.report("이전 공유의 저장 영역을 확인하지 못했어요. 처리함을 확인한 뒤 필요하면 다시 공유해 주세요.")
+            } else acceptShare(intent, if (sameShare) savedInstanceState?.getString("shareOwner") else null)
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -34,9 +39,15 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         acceptShare(intent)
     }
+    override fun onStart() {
+        super.onStart()
+        model.recheckSession()
+    }
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putBoolean("shareCommitted", model.sharedIntentCommitted)
+        outState.putBoolean("shareHandled", model.sharedIntentHandled)
+        outState.putString("shareOwner", model.sharedIntentOwner)
         outState.putString("shareFingerprint", shareFingerprint(intent))
         super.onSaveInstanceState(outState)
     }
@@ -48,12 +59,12 @@ class MainActivity : ComponentActivity() {
         MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
     }.getOrNull()
 
-    private fun acceptShare(intent: Intent?) {
+    private fun acceptShare(intent: Intent?, expectedOwner: String? = null) {
         if (intent?.action != Intent.ACTION_SEND) return
         if (intent.type != "text/plain") { model.report("웹 링크를 텍스트로 공유해 주세요."); return }
         val text = runCatching { intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString() }.getOrNull()
         if (text == null) { model.report("공유된 링크를 읽지 못했어요. 링크를 직접 붙여 넣어 주세요."); return }
-        model.capture(text, shared = true)
+        model.capture(text, shared = true, expectedOwner = expectedOwner)
     }
 
     private fun openExternal(value: String) {

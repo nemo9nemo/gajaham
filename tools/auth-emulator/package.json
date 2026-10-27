@@ -1,0 +1,6 @@
+{
+  "name": "gajaham-auth-emulator",
+  "private": true,
+  "scripts": { "start": "node -r ./quiet.cjs node_modules/firebase-tools/lib/bin/firebase.js emulators:start --only auth --project demo-gajaham" },
+  "devDependencies": { "firebase-tools": "15.34.1" }
+}

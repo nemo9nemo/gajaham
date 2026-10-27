@@ -35,6 +35,29 @@ class AppUiTest {
     private val model get() = ViewModelProvider(compose.activity)[PlacesViewModel::class.java]
     private fun loaded() { compose.waitUntil(20_000) { !model.state.value.loading && !model.state.value.busy }; compose.waitForIdle() }
 
+    @Test fun guestSettingsProvideLoginAndNoFileBackupActions() {
+        loaded(); compose.onNodeWithText("설정").performClick()
+        compose.onNodeWithText("로그인 없이 이용 중").assertIsDisplayed()
+        compose.onNodeWithText("파일로 백업").assertDoesNotExist()
+        compose.onNodeWithText("백업 가져오기").assertDoesNotExist()
+        compose.onNodeWithText("이메일 로그인·가입").performClick()
+        compose.onNodeWithTag("auth-email").assertIsDisplayed()
+        compose.onNodeWithTag("auth-password").assertIsDisplayed()
+        compose.onNodeWithTag("auth-submit").assertIsNotEnabled()
+        val authScreenshot = File("build/reports/ui/email-login.png")
+        requireNotNull(authScreenshot.parentFile).mkdirs()
+        compose.runOnIdle {
+            val view = compose.activity.window.decorView
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            authScreenshot.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+        compose.onNodeWithTag("auth-form").performScrollToNode(hasText("로그인 없이 이용하기"))
+        compose.onNodeWithText("로그인 없이 이용하기").performClick()
+        compose.waitUntil(20_000) { model.state.value.route == "home" && !model.state.value.authBusy }
+        compose.onNodeWithTag("places-list").assertIsDisplayed()
+    }
+
     @Test fun manualPlaceCanBeSavedAndViewedWithoutLogin() {
         loaded()
         compose.onNodeWithTag("places-list").performScrollToNode(hasText("직접 장소 추가"))

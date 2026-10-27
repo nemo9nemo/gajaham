@@ -1,8 +1,6 @@
 package kr.gajaham.app.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,7 +16,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import java.time.LocalDate
+import kr.gajaham.app.AppState
+import kr.gajaham.app.data.GUEST
 import kr.gajaham.app.PlacesViewModel
 import kr.gajaham.core.*
 
@@ -28,16 +27,19 @@ private val Green = Color(0xFF0F5C4C)
 @Composable
 fun GajahamApp(model: PlacesViewModel, openExternal: (String) -> Unit) {
     val state by model.state.collectAsStateWithLifecycle()
+    key(state.owner, state.generation) { GajahamContent(model, openExternal, state) }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GajahamContent(model: PlacesViewModel, openExternal: (String) -> Unit, state: AppState) {
     val selected = state.records.find { it.id == state.selectedId }
     val snackbar = remember { SnackbarHostState() }
-    var exportWarning by rememberSaveable { mutableStateOf(false) }
     var clearWarning by rememberSaveable { mutableStateOf(false) }
     var permanentId by rememberSaveable { mutableStateOf<String?>(null) }
     var trashWarning by rememberSaveable { mutableStateOf(false) }
     var editorDirty by remember { mutableStateOf(false) }
     var discardWarning by rememberSaveable { mutableStateOf(false) }
-    val exportFile = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> if (uri != null) model.export(uri) }
-    val importFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) model.previewImport(uri) }
     val root = state.route in setOf("home", "inbox", "settings")
     fun leave() {
         editorDirty = false
@@ -58,7 +60,7 @@ fun GajahamApp(model: PlacesViewModel, openExternal: (String) -> Unit) {
                 TopAppBar(title = { Text(when (state.route) {
                     "home" -> "내 장소"; "inbox" -> "처리함"; "settings" -> "설정"
                     "add" -> "링크 추가"; "edit" -> if (selected == null) "직접 장소 추가" else "장소 확인·수정"
-                    "trash" -> "휴지통"; else -> "장소 상세"
+                    "trash" -> "휴지통"; "login" -> "이메일 로그인"; "account" -> "계정"; else -> "장소 상세"
                 }) }, navigationIcon = { if (!root) TextButton(onClick = back) { Text("이전") } })
             },
             bottomBar = {
@@ -74,7 +76,7 @@ fun GajahamApp(model: PlacesViewModel, openExternal: (String) -> Unit) {
             snackbarHost = { SnackbarHost(snackbar) },
         ) { insets ->
             Column(Modifier.fillMaxSize().padding(insets).imePadding()) {
-                if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (state.busy || state.authBusy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (state.loading) { Text("기록을 불러오고 있어요.", Modifier.padding(24.dp)); return@Column }
                 if (state.loadFailed) {
                     Text("기록을 읽지 못했어요. 앱 데이터나 앱을 삭제하지 말고 다시 불러와 주세요.", Modifier.padding(24.dp))
@@ -88,35 +90,24 @@ fun GajahamApp(model: PlacesViewModel, openExternal: (String) -> Unit) {
                         open = { model.navigate(if (it.confirmed) "detail" else "edit", it.id) },
                         manual = { model.navigate("edit") },
                     )
-                    "add" -> AddLinks(state.failedSharedText, state.busy, { model.capture(it) }, { model.navigate("edit") })
-                    "edit" -> Editor(selected, state.busy, { name, address, memo, menu, category -> model.save(selected?.id, name, address, memo, menu, category) }, { editorDirty = it }, { trashWarning = true })
+                    "add" -> AddLinks(state.failedSharedText, state.busy, { model.capture(it, context = state.context) }, { model.navigate("edit") })
+                    "edit" -> Editor(selected, state.busy, { name, address, memo, menu, category -> model.save(selected?.id, name, address, memo, menu, category, state.context) }, { editorDirty = it }, { trashWarning = true })
                     "detail" -> if (selected != null && selected.trashedAt == null && selected.confirmed) PlaceDetail(selected, state.busy,
-                        edit = { model.navigate("edit", selected.id) }, visited = { model.visited(selected.id) },
+                        edit = { model.navigate("edit", selected.id) }, visited = { model.visited(selected.id, state.context) },
                         trash = { trashWarning = true }, openExternal = openExternal)
                     else Text("기록이 없거나 휴지통에 있어요.", Modifier.padding(24.dp))
-                    "trash" -> TrashList(state.records.filter { it.trashedAt != null }, state.busy, { model.restore(it.id) }, { permanentId = it.id })
-                    "settings" -> Settings(state.records.size, state.busy,
-                        export = { exportWarning = true }, import = { importFile.launch(arrayOf("*/*")) },
-                        trash = { model.navigate("trash") }, clear = { clearWarning = true })
+                    "trash" -> TrashList(state.records.filter { it.trashedAt != null }, state.busy, { model.restore(it.id, state.context) }, { permanentId = it.id })
+                    "settings" -> Settings(state, model, trash = { model.navigate("trash") }, clear = { clearWarning = true })
+                    "login" -> EmailLogin(state.authBusy, state.authAvailable, model::login, model::resetPassword) { model.useGuest(state.user?.uid) }
+                    "account" -> AccountScreen(state, model)
                 }
             }
         }
-        if (exportWarning) AlertDialog(onDismissRequest = { exportWarning = false }, title = { Text("백업 파일 저장") },
-            text = { Text("출처 링크·메모·휴지통 기록이 평문 JSON에 포함돼요. 파일을 안전한 곳에 보관하세요. 앱을 삭제하면 파일 없이 기록을 복구할 수 없어요.") },
-            confirmButton = { TextButton(onClick = { exportWarning = false; exportFile.launch("gajaham-backup-${LocalDate.now()}.json") }) { Text("파일 위치 선택") } },
-            dismissButton = { TextButton(onClick = { exportWarning = false }) { Text("취소") } })
-        if (state.pendingImport != null && state.importPlan != null) {
-            val plan = requireNotNull(state.importPlan)
-            AlertDialog(onDismissRequest = { if (!state.busy) model.cancelImport() }, title = { Text("가져올 기록 확인") },
-                text = { Text("추가 ${plan.additions.size}개 · 중복 ${plan.duplicates}개 · 보관 만료 ${plan.expired}개 제외\n현재 기록을 우선하며 덮어쓰지 않아요. 휴지통 상태도 함께 가져와요.") },
-                confirmButton = { TextButton(enabled = !state.busy, onClick = { model.confirmImport() }) { Text("가져오기 실행") } },
-                dismissButton = { TextButton(enabled = !state.busy, onClick = { model.cancelImport() }) { Text("취소") } })
-        }
-        if (clearWarning) ClearDialog(state.busy, { clearWarning = false }, { clearWarning = false; model.clear() })
+        if (clearWarning) ClearDialog(state.busy, { clearWarning = false }, { clearWarning = false; model.clear(state.context) })
         if (trashWarning) ConfirmDialog("휴지통으로 이동", if (state.route == "edit" && editorDirty) "저장하지 않은 입력은 버려지고 원래 기록을 휴지통으로 옮겨요. 30일이 지난 기록은 다음 실행 시 정리돼요." else "30일이 지난 기록은 다음 실행 시 정리돼요.", "이동", { trashWarning = false }) {
-            trashWarning = false; selected?.let { model.trash(it.id) }
+            trashWarning = false; selected?.let { model.trash(it.id, state.context) }
         }
-        permanentId?.let { id -> ConfirmDialog("영구 삭제", "이 기기의 기록을 되돌릴 수 없어요. 이미 내보낸 파일은 별도로 관리해 주세요.", "영구 삭제", { permanentId = null }) { permanentId = null; model.deletePermanently(id) } }
+        permanentId?.let { id -> ConfirmDialog("영구 삭제", "이 기록은 영구 삭제되며 복구할 수 없어요.", "영구 삭제", { permanentId = null }) { permanentId = null; model.deletePermanently(id, state.context) } }
         if (discardWarning) ConfirmDialog("수정을 그만할까요?", "저장하지 않은 입력은 사라져요.", "그만하기", { discardWarning = false }) { discardWarning = false; leave() }
     }
 }
@@ -132,7 +123,7 @@ private fun PlaceList(records: List<Place>, pending: Boolean, open: (Place) -> U
     }
     LazyColumn(modifier = Modifier.testTag("places-list"), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 100.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Text(if (pending) "장소를 확인하면 내 장소에 담겨요." else "저장한 이유까지 기억하는 나의 장소", style = MaterialTheme.typography.titleMedium) }
-        item { Text("로그인 없이 이 기기에 저장해요. 기기 변경 전에는 설정에서 백업하세요.", style = MaterialTheme.typography.bodySmall) }
+        item { Text("개인 기록은 이 기기에만 저장돼요. 로그인해도 앱 삭제 후 복구할 수 없어요.", style = MaterialTheme.typography.bodySmall) }
         item { OutlinedTextField(value = query, onValueChange = { query = it }, label = { Text("기록 검색") }, singleLine = true, modifier = Modifier.fillMaxWidth()) }
         if (!pending) item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -214,7 +205,7 @@ private fun PlaceDetail(place: Place, busy: Boolean, edit: () -> Unit, visited: 
 @Composable
 private fun TrashList(records: List<Place>, busy: Boolean, restore: (Place) -> Unit, permanent: (Place) -> Unit) {
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Text("30일이 지난 기록은 다음 앱 실행·저장소 정리 시 영구 삭제돼요. 내보낸 백업 파일은 별도로 관리해 주세요.") }
+        item { Text("30일이 지난 기록은 다음 앱 실행·저장소 정리 시 영구 삭제돼요. 영구 삭제한 기록은 복구할 수 없어요.") }
         if (records.isEmpty()) item { Text("휴지통이 비어 있어요.") }
         items(records, key = { it.id }) { place -> Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
@@ -227,17 +218,17 @@ private fun TrashList(records: List<Place>, busy: Boolean, restore: (Place) -> U
 }
 
 @Composable
-private fun Settings(count: Int, busy: Boolean, export: () -> Unit, import: () -> Unit, trash: () -> Unit, clear: () -> Unit) {
+private fun Settings(state: AppState, model: PlacesViewModel, trash: () -> Unit, clear: () -> Unit) {
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Text("가자함 · 개인 저장 개발 버전", style = MaterialTheme.typography.titleLarge) }
-        item { Text("이 기기에 $count 개 기록이 있어요. 서버 계정이나 자동 동기화는 없어요. 앱 삭제·저장 공간 초기화·기기 교체 전에 파일로 백업해 주세요.") }
-        item { OutlinedButton(enabled = !busy, onClick = export, modifier = Modifier.fillMaxWidth()) { Text("파일로 백업") } }
-        item { OutlinedButton(enabled = !busy, onClick = import, modifier = Modifier.fillMaxWidth()) { Text("백업 가져오기") } }
-        item { Text("가자함 JSON · 최대 2MiB / 5,000건. 현재 기록과 겹치면 현재 기록을 유지해요. 저장 시에도 백업 가능한 용량을 확인해요.", style = MaterialTheme.typography.bodySmall) }
-        item { OutlinedButton(enabled = !busy, onClick = trash, modifier = Modifier.fillMaxWidth()) { Text("휴지통") } }
-        item { TextButton(enabled = !busy, onClick = clear) { Text("이 기기의 모든 기록 삭제", color = MaterialTheme.colorScheme.error) } }
-        item { HorizontalDivider(); Text("기록과 출처는 앱 전용 저장소에 보관해요. 외부 지도·원본을 열거나 백업 파일을 내보내면 선택한 앱·저장소에서 처리돼요. 이 버전에는 광고·분석 SDK가 없어요.", modifier = Modifier.padding(top = 12.dp), style = MaterialTheme.typography.bodySmall) }
-        item { Text("자동 클라우드 백업과 기기 이전은 앱 설정에서 제외했어요. 제조사별 실제 이전 동작은 검증 중이에요. 지도·자동 분석·DM·광고·로그인·공유 맵은 후속 개발 항목이에요.", style = MaterialTheme.typography.bodySmall) }
+        item { Text("가자함 · 나의 장소 기록", style = MaterialTheme.typography.titleLarge) }
+        item { Text(if (state.owner == GUEST) "로그인 없이 이용 중" else "이메일 계정으로 이용 중", fontWeight = FontWeight.Bold) }
+        item { Text("현재 영역에 ${state.records.size}개 기록이 있어요. 개인 기록은 로그인 여부와 관계없이 이 기기에만 보관해요. 앱 삭제·데이터 초기화·기기 분실 후 복구할 수 없어요.") }
+        item { OutlinedButton(enabled = !state.authBusy, onClick = { model.navigate(if (state.user == null) "login" else "account") }, modifier = Modifier.fillMaxWidth()) { Text(if (state.user == null) "이메일 로그인·가입" else "계정 관리") } }
+        item { Text("게스트는 상대 계정과 연결할 수 없어요. 카카오·구글 로그인은 2차 개발 예정이에요. 상대 연결·공유 맵은 아직 제공하지 않아요.", style = MaterialTheme.typography.bodySmall) }
+        item { OutlinedButton(enabled = !state.busy, onClick = trash, modifier = Modifier.fillMaxWidth()) { Text("휴지통") } }
+        item { TextButton(enabled = !state.busy, onClick = clear) { Text("현재 개인 기록 모두 삭제", color = MaterialTheme.colorScheme.error) } }
+        item { HorizontalDivider(); Text("파일 백업·가져오기와 개인 기록 서버 동기화를 제공하지 않아요. 로그인 정보는 인증 서비스에서 처리하며 개인 기록은 보내지 않아요. 외부 지도·원본을 열면 선택한 앱에서 처리돼요.", Modifier.padding(top = 12.dp)) }
+        item { Text("기기 전체 최대 5,000건 / 약 2MiB. 자동 클라우드 백업과 기기 이전은 앱 설정에서 제외했어요. 제조사별 실제 이전 동작은 검증 중이에요. 지도·자동 분석·DM·광고는 후속 개발 항목이에요.", style = MaterialTheme.typography.bodySmall) }
     }
 }
 
@@ -252,7 +243,7 @@ private fun ClearDialog(busy: Boolean, cancel: () -> Unit, confirm: () -> Unit) 
     var text by rememberSaveable { mutableStateOf("") }
     AlertDialog(onDismissRequest = cancel, title = { Text("모든 기록 영구 삭제") }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("처리함·장소·휴지통을 모두 지워요. 복구하려면 미리 내보낸 백업 파일이 필요해요. 계속하려면 ‘삭제’를 입력해 주세요.")
+            Text("현재 게스트 또는 계정 영역의 처리함·장소·휴지통을 모두 지워요. 복구할 수 없어요. 계속하려면 ‘삭제’를 입력해 주세요.")
             OutlinedTextField(value = text, onValueChange = { text = it }, label = { Text("삭제 입력") }, singleLine = true)
         }
     }, confirmButton = { TextButton(enabled = !busy && text == "삭제", onClick = confirm) { Text("모두 영구 삭제") } }, dismissButton = { TextButton(onClick = cancel) { Text("취소") } })

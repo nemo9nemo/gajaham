@@ -19,6 +19,19 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = IsolatedTestApplication::class)
 class ShareIntentTest {
+    @Test fun replayWithUnknownOriginalOwnerIsRejectedWithoutClaimingCommit() {
+        val intent = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "https://example.com/unknown-owner")
+        val saved = Bundle().apply {
+            putString("shareFingerprint", java.security.MessageDigest.getInstance("SHA-256").digest("text/plain\nhttps://example.com/unknown-owner".toByteArray()).joinToString("") { "%02x".format(it) })
+            putBoolean("shareHandled", false)
+        }
+        val controller = Robolectric.buildActivity(MainActivity::class.java, intent).create(saved).start().resume().visible()
+        val model = ViewModelProvider(controller.get())[PlacesViewModel::class.java]
+        await { !model.state.value.loading }
+        assertTrue(model.sharedIntentHandled); assertFalse(model.sharedIntentCommitted)
+        assertTrue(model.state.value.records.isEmpty())
+        controller.pause().stop().destroy()
+    }
     @Before fun resetDatabase() {
         val app = ApplicationProvider.getApplicationContext<GajahamApplication>()
         assertEquals(IsolatedTestApplication::class.java, app.javaClass)

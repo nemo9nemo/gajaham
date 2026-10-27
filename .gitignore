@@ -10,3 +10,7 @@ android/local.properties
 android/*.jks
 android/*.keystore
 android/signing.properties
+android/auth.local.properties
+tools/auth-emulator/node_modules/
+tools/auth-emulator/firebase-debug.log
+tools/auth-emulator/*-debug.log

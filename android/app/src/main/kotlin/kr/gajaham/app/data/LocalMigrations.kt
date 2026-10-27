@@ -6,6 +6,14 @@ import kotlinx.serialization.json.Json
 import kr.gajaham.core.Place
 
 object LocalMigrations {
+    val LOCAL_SCOPES_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE places ADD COLUMN ownerScope TEXT NOT NULL DEFAULT 'guest'")
+            db.execSQL("DROP INDEX index_places_canonicalSource")
+            db.execSQL("CREATE UNIQUE INDEX index_places_ownerScope_canonicalSource ON places(ownerScope, canonicalSource)")
+            db.execSQL("CREATE TABLE IF NOT EXISTS local_state (`key` TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY(`key`))")
+        }
+    }
     val SOURCE_KEYS_1_2 = object : Migration(1, 2) {
         override fun migrate(db: SupportSQLiteDatabase) {
             val keys = mutableListOf<Pair<String, String?>>()

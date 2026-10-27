@@ -2,7 +2,7 @@
 
 기준: 2026-10-20 / [APP-01](../plans/APP-01-android-local-core.md). 서비스 계정·서버·광고·분석 수집 없이 앱 전용 DB를 사용한다.
 
-**2026-10-26 요구 변경:** 아래는 현재 Room v2/JSON 백업 구현의 계약이다. 새 출시 정책은 [로그인·비로그인 계약](auth-and-guest.md)을 우선한다. 이메일 로그인 여부와 무관하게 개인 원본은 로컬 전용·앱 삭제 후 복구 불가이며 사용자용 JSON 백업/가져오기를 제외해야 한다. 실제 기능 제거·로컬 계정 영역 분리는 아직 구현하지 않았다.
+**후속 계약 2026-10-27:** 아래 v1/v2·JSON 백업 항목은 APP-01 당시 구현 이력이다. 현재 앱은 [AUTH-02](../plans/AUTH-02-email-local-mode.md)/[결정 0006](../decisions/0006-email-auth-local-scopes.md)의 Room v3 계약을 따른다. 기존 기록은 guest로 보존하고 `(ownerScope, canonicalSource)` UNIQUE·소유 영역 조건으로 접근을 분리한다. 선택/접근 정지/탈퇴 pending은 Room metadata에 둔다. 파일 백업/가져오기 UI·Repository·SAF 경로는 제거했다. 개인 원본은 로그인 후에도 로컬 전용·앱 삭제 후 복구 불가다. 최신 모드/이동/삭제 정책은 [로그인·비로그인 계약](auth-and-guest.md)과 AUTH-02를 우선한다.
 
 ## 요구와 정책
 
