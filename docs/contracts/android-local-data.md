@@ -1,5 +1,7 @@
 # Android 개인 저장 데이터 계약 v1
 
+**2026-11-03 범위 구분:** 이 계약은 기존 Android/Room 구현 이력이다. 새 웹앱의 로그인 개인 원본은 [결정 0008](../decisions/0008-account-cloud-records.md)·[계정 계약](web-account-data.md)에 따라 서버에 보관하고 여러 기기에서 조회한다. 기존 Android에 서버 업로드/동기화를 구현한 것은 아니며 이 문서의 로컬 전용을 최신 웹 정책으로 사용하지 않는다.
+
 기준: 2026-10-20 / [APP-01](../plans/APP-01-android-local-core.md). 서비스 계정·서버·광고·분석 수집 없이 앱 전용 DB를 사용한다.
 
 **후속 계약 2026-10-27:** 아래 v1/v2·JSON 백업 항목은 APP-01 당시 구현 이력이다. 현재 앱은 [AUTH-02](../plans/AUTH-02-email-local-mode.md)/[결정 0006](../decisions/0006-email-auth-local-scopes.md)의 Room v3 계약을 따른다. 기존 기록은 guest로 보존하고 `(ownerScope, canonicalSource)` UNIQUE·소유 영역 조건으로 접근을 분리한다. 선택/접근 정지/탈퇴 pending은 Room metadata에 둔다. 파일 백업/가져오기 UI·Repository·SAF 경로는 제거했다. 개인 원본은 로그인 후에도 로컬 전용·앱 삭제 후 복구 불가다. 최신 모드/이동/삭제 정책은 [로그인·비로그인 계약](auth-and-guest.md)과 AUTH-02를 우선한다.

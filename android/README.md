@@ -1,5 +1,7 @@
 # 가자함 Android 개인 저장 앱
 
+**2026-11-03 출시/저장 방향:** 현재 대상은 설치 없는 웹앱이며 로그인 원본은 서버 보관·여러 기기 조회로 변경됐다([결정 0008](../docs/decisions/0008-account-cloud-records.md)). 아래는 기존 Android/Room 구현·검사 안내이며 서버 업로드/동기화 구현 완료가 아니다. Android 원본을 자동 이전하지 않는다.
+
 이메일 로그인과 로그인 없는 개인 이용을 제공한다. 개인 기록은 어느 모드에서도 기기 안에만 저장한다. [AUTH-02 브리프](../docs/plans/AUTH-02-email-local-mode.md)와 [검사 증거](../docs/validation/AUTH-02-email-local-mode.md)를 함께 본다. 정적 화면 목업 `web/`와 실제 네이티브 앱은 별도다.
 
 ## 구성과 검사

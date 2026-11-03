@@ -1,5 +1,7 @@
 # 가자함 실제 출시까지 남은 작업
 
+**2026-11-03 최신 저장 요구:** URL 접속 웹앱에서 로그인 기록을 서버에 보관하고 같은 계정으로 다른 기기/브라우저에서 조회한다. [결정 0008](../decisions/0008-account-cloud-records.md)·[AUTH-03](../plans/AUTH-03-account-cloud-policy.md)이 아래 로그인 원본 로컬 전용 정책을 대체한다. Android/목업의 과거 검사와 웹 서버 기능 완료는 구분한다.
+
 **2026-11-03 웹앱 전환:** 이 문서의 L01~L10은 Android 출시 점검 이력이다. 현재 출시 대상·잔여 개발·도메인 없는 운영 비용은 [WEB-00](../plans/WEB-00-webapp-transition.md), [결정 0007](../decisions/0007-webapp-first-low-cost.md)을 우선한다. Android AAB/서명·Play 심사·AdMob은 현 웹 출시 선행 조건에서 제외한다. 이메일/게스트·개인 로컬 전용·공유 선택 규칙은 유지하고 웹의 브라우저 저장·PWA·실제 지도·운영 검증은 새로 수행해야 한다. 아래 APK·기기·검사 기록은 웹 완료 증거가 아니다.
 
 점검일: 2026-10-26 / 검토: Codex / 최초 점검 코드: `21da94a68de8c7d21bbe70292c966f38b04c2d64`. 전체 브랜치 재리뷰에서 발견한 저장 정확성 2건의 후속 조치는 [FIX-LAUNCH-01](../plans/FIX-LAUNCH-01-save-integrity.md)을 따른다.

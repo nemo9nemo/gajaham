@@ -1,5 +1,7 @@
 # 가자함 갤럭시 우선 출시·광고 수익·마케팅 기획
 
+**2026-11-03 최신 저장 요구:** 설치 없는 URL 접속 웹앱이며 로그인 계정 개인 원본은 서버 보관·다른 기기 조회다. 게스트만 로컬 전용이다. [결정 0008](../decisions/0008-account-cloud-records.md)·[AUTH-03](../plans/AUTH-03-account-cloud-policy.md)을 우선하고 아래 Android/로컬 전용·서버 복구 금지 표현은 이전 기획 이력으로 읽는다.
+
 **2026-11-03 최신 방향:** 사용자가 Android 앱 출시를 모바일 웹앱으로 변경했다. [결정 0007](../decisions/0007-webapp-first-low-cost.md), [WEB-00 잔여 작업·최소 비용](../plans/WEB-00-webapp-transition.md)을 우선한다. Galaxy는 모바일 브라우저 검증 우선순위로 유지하고 Android/Play·AdMob 중심의 아래 일정·비용은 이력으로 보존한다. 개인 원본의 서버 복구·파일 백업은 허용하지 않으며 웹의 데이터 수명은 [웹 로컬 계약](../contracts/web-local-data.md)을 따른다.
 
 작성·공식 자료 확인: 2026-10-19. 검토 기준 코드: `82434a16fd79f48b51de9e940b1ecd13dff68e7f`.

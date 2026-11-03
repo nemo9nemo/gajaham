@@ -1,5 +1,7 @@
 # WEB-00 웹 전환 점검과 후속 검증
 
+**2026-11-03 후속:** 아래 WEB-00 실행 증거/초기 시나리오는 당시 이력이다. 로그인 원본 로컬 전용·다른 기기 복구 불가 시나리오는 [결정 0008](../decisions/0008-account-cloud-records.md)과 [AUTH-03 AC01~AC13](AUTH-03-account-cloud-policy.md)으로 대체한다. 현재 서버 개인 기록·두 기기 조회는 미구현/미검사다.
+
 기준: 2026-11-03 / [브리프](../plans/WEB-00-webapp-transition.md), [결정 0007](../decisions/0007-webapp-first-low-cost.md), [웹 로컬 계약](../contracts/web-local-data.md).
 
 ## 이번 문서 작업의 검사
