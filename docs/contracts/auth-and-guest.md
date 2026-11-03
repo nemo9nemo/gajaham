@@ -1,5 +1,7 @@
 # 이메일 로그인·비로그인 개인 이용 계약
 
+**2026-11-03 웹 전환 보완:** 기본 인증·게스트·개인 원본 로컬 전용·공유 인가 규칙은 유지한다. 아래 ‘설치’/‘앱 삭제’/Room 설계는 Android의 당시 기준이며 웹의 실제 저장 단위·데이터 수명·다중 탭·주소 변경은 [웹 로컬 계약](web-local-data.md)을 따른다. 현재 웹앱 기능 구현과 운영 인증은 완료되지 않았다.
+
 기준: 2026-10-26 [결정 0005](../decisions/0005-login-and-device-local-records.md). 분석/설계 계약이다. 2026-10-27 이메일 SDK·로컬 영역·파일 백업 제거·외부 탈퇴 페이지 구현은 [AUTH-02](../plans/AUTH-02-email-local-mode.md), [결정 0006](../decisions/0006-email-auth-local-scopes.md)과 [실행 증거](../validation/AUTH-02-email-local-mode.md)를 따른다. 이 문서의 논리적 공유 서버 API는 아직 실제 API가 아니다. [기능 분석](../plans/AUTH-01-login-guest-analysis.md), [전체 검증 시나리오](../validation/AUTH-01-login-guest.md)를 함께 본다.
 
 ## 확정 요구

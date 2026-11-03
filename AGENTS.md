@@ -4,9 +4,11 @@
 
 한국어로 소통한다. 가자함은 인스타그램 DM·링크로 받은 장소를 개인 맵과 두 사람의 공유 맵에 모으는 서비스다. 개발의 기준 경로는 C:\Users\love0\nemo9Dev\gajaham이다.
 
-현재는 정적 목업과 Android 개인 저장 앱 개발 단계다. `android/`는 Room v3와 선택적 이메일 로그인 SDK·계정별 로컬 영역을 구현했다. 공식 Auth Emulator 통합 검사와 운영 인증 활성화·실기기 검사를 구분한다. 실제 상대 연결·공유 서버·DM은 아직 없다. 기획 기준은 docs의 기획 문서(docs/personal-shared-map-plan-2026-10-12.md, docs/planning-review-2026-10-12.md)와 .planning-staging의 제품 기획·로드맵·시장 조사다. 구현되지 않은 기능과 실행하지 않은 검사를 완료로 표시하지 않는다.
+현재 출시 방향은 **모바일 웹앱**이다(2026-11-03 사용자 요구). 도메인·운영 서버는 보유한 것으로 가정하지 않으며 최소 운영 비용을 우선한다. 결정 0007과 docs/plans/WEB-00-webapp-transition.md가 전환·잔여 작업 기준이다. 웹 기능 이식·운영 계정 개설·공개 배포는 아직 하지 않았다. Android 출시·AAB·Play 심사·AdMob 준비는 현 출시의 선행 조건에서 제외하고 기존 구현은 보존한다.
 
-2026-10-26 최신 요구는 이메일·비밀번호 기본 로그인, 로그인 없는 개인 이용 허용·상대 계정 연결 불가, 카카오·구글 등의 간편 로그인은 2차 개발이다. 로그인 여부와 관계없이 개인 기록은 기기 내에만 보관하고 앱 삭제 시 복구하지 않는다. AUTH-02에서 사용자용 파일 백업/가져오기 UI·Repository·파일 callback을 제거했다. 개인 기록 서버 백업·동기화를 추가하지 않는다. 기준은 결정 0005/0006, AUTH-01 분석과 AUTH-02 구현 브리프다. 갤럭시 우선·광고 수익화는 유지한다. 10월 19일 출시 기획과 결정 0003의 로그인 단계·개인 기록 클라우드 복구 제안은 최신 요구로 대체하며, 그 밖의 예산·목표·단계 제안은 구현·출시 완료와 구분한다.
+구현 자산은 정적 목업과 Android 개인 저장 앱이다. `android/`는 Room v3와 선택적 이메일 로그인 SDK·계정별 로컬 영역을 구현했다. 공식 Auth Emulator 통합 검사와 운영 인증 활성화·실기기 검사를 구분한다. 실제 웹 개인 저장·웹앱 인증 흐름·지도·상대 연결·공유 서버·DM은 아직 없다. 기획 기준은 docs의 기획 문서(docs/personal-shared-map-plan-2026-10-12.md, docs/planning-review-2026-10-12.md)와 .planning-staging의 제품 기획·로드맵·시장 조사다. 구현되지 않은 기능과 실행하지 않은 검사를 완료로 표시하지 않는다.
+
+2026-10-26 인증 요구는 유지한다. 이메일·비밀번호 기본 로그인, 로그인 없는 개인 이용 허용·상대 계정 연결 불가, 카카오·구글 등의 간편 로그인은 2차 개발이다. 로그인 여부와 관계없이 개인 기록은 기기 내에만 보관한다. 웹은 브라우저/프로필/origin별 저장이며 사이트 데이터 삭제·브라우저/기기 변경 후 복구하지 않는다. PWA 아이콘 제거만으로 사이트 데이터 삭제를 보장하지 않는다. AUTH-02에서 사용자용 파일 백업/가져오기 UI·Repository·파일 callback을 제거했다. 개인 기록 서버 백업·동기화·파일 복구 경로를 추가하지 않는다. 기준은 결정 0005/0006/0007, AUTH-01 분석과 AUTH-02 구현 브리프, docs/contracts/web-local-data.md다. 갤럭시 모바일 브라우저 우선·광고 수익화 목표는 유지하되 웹 광고는 별도 검토한다. 10월 19일 출시 기획과 결정 0003의 로그인 단계·개인 기록 클라우드 복구·Android 우선 배포 제안은 최신 요구로 대체하며, 그 밖의 예산·목표·단계 제안은 구현·출시 완료와 구분한다.
 
 기술 스택·검증 명령·구현 경계가 정해지면 이 파일의 '구현 경계'와 '산출물과 검증'에 추가한다. 정해지기 전에는 브리프마다 사용할 스택과 검증 명령을 명시한다.
 
@@ -32,6 +34,8 @@
 
 2026-10-27 AUTH-02는 Firebase BoM 34.9.0/Auth 24.0.1 공식 이메일 인증, Room v3 guest/UID 영역, 명시적 게스트 기록 이동, 탈퇴 pending·세션 정지, 백업 경로 제거와 `account/` 외부 탈퇴 페이지를 구현한다. 실제 운영 설정은 아직 없으며 미설정 시 게스트만 사용 가능하다. debug 명시적 demo Emulator와 release를 분리한다. 서버 인가·상대 연결은 미구현이다. 개인 원본·공유 사본·인증 계정 정보는 별도다. 브리프·검사 증거는 docs/plans/AUTH-02-email-local-mode.md와 docs/validation/AUTH-02-email-local-mode.md를 따른다.
 
+2026-11-03 웹 전환의 실증 제안은 정적 웹앱·IndexedDB·공식 Firebase Web 인증·Firebase Hosting Spark의 무료 주소다. 확정된 운영 배포/유료 계약은 아니다. 실제 웹앱 경로·프레임워크·SDK 버전·검증 명령은 후속 WEB-01 브리프에서 정하고 기존 `web/` 목업의 패키지 금지는 유지한다. 정식 origin을 하나로 고정하며 무료 주소에서 자체 도메인으로 바꿔도 개인 원본이 자동 이전된다고 약속하지 않는다. 공유는 선택 사본의 서버 보관·실제 인가를 별도 설계하고 개인 원본 서버 컬렉션은 만들지 않는다.
+
 ## 산출물과 검증
 
 정적 목업 UI는 `web/`에 있고 P0 58개 화면 카탈로그와 목 데이터 상태 전이를 제공하는 의존성 없는 HTML·CSS·ES 모듈이다(docs/decisions/0001-static-mock-ui-stack.md). 패키지를 추가하지 않는다. Node는 Codex 런타임 v24 기준이다. 실제 로그인·DM·분석·DB 연동과 정적 목업의 동작을 구분한다.
@@ -41,6 +45,8 @@
 - 미리보기: `node web/scripts/serve.mjs` → http://localhost:5173/#/catalog (390×844 기준)
 
 Android는 JDK 17·Gradle Wrapper 8.13·SDK/target 36·minSdk 29를 사용한다. 실행 환경은 android/README.md, 로컬 도구 선택은 android/scripts/check.ps1을 따른다.
+
+웹앱 전환 계획과 시나리오는 docs/plans/WEB-00-webapp-transition.md, docs/validation/WEB-00-webapp-transition.md를 따른다. 위 정적 목업 검사와 아래 Android 검사를 실제 웹앱 영속 저장·인증·공유·PWA·운영 배포의 완료 증거로 재사용하지 않는다.
 
 - Android 검사·빌드: `./android/scripts/check.ps1` 또는 `android/gradlew.bat -p android :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --no-daemon`
 - JVM 도메인 검사와 Robolectric Android 로컬 검사를 실기기·에뮬레이터 검사와 구분한다. 실제 지도·공유 앱·파일 제공자·One UI 검사는 기기별 증거가 있어야 완료다.
