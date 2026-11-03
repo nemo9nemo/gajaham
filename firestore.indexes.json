@@ -1,0 +1,12 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    { "collectionGroup": "users", "fieldPath": "purgeAt", "ttl": true, "indexes": [] },
+    { "collectionGroup": "apiLimits", "fieldPath": "purgeAt", "ttl": true, "indexes": [] },
+    { "collectionGroup": "deletionJobs", "fieldPath": "purgeAt", "ttl": true, "indexes": [] },
+    { "collectionGroup": "records", "fieldPath": "memo", "indexes": [] },
+    { "collectionGroup": "records", "fieldPath": "menu", "indexes": [] },
+    { "collectionGroup": "records", "fieldPath": "canonicalSource", "indexes": [] },
+    { "collectionGroup": "records", "fieldPath": "sourceUrl", "indexes": [] }
+  ]
+}
