@@ -26,7 +26,7 @@ export const personalApi = onCall({ enforceAppCheck: process.env.FUNCTIONS_EMULA
     return await service.handle(token.uid, token.auth_time, request.data.action, request.data.payload ?? {});
   } catch (error) {
     if (error instanceof HttpsError) throw error;
-    if (error instanceof DomainError) throw new HttpsError(error.code, error.message);
+    if (error instanceof DomainError) throw new HttpsError(error.code, error.message, error.details);
     if (typeof error.code === 'string' && error.code.startsWith('auth/')) throw new HttpsError('unauthenticated', '다시 로그인해 주세요.');
     // Do not emit request bodies, email, token, UID, or upstream error details.
     throw new HttpsError('unavailable', '연결을 확인한 뒤 다시 시도해 주세요.');

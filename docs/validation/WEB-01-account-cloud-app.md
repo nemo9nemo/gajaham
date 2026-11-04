@@ -5,7 +5,7 @@
 ## 실행 결과
 
 - Node22.23.4(공식 배포 SHA256 확인)·Java21.0.13·Firebase CLI15.34.2, 배포 runtime nodejs22. 초기 Node24 검사와 최종 Node22 검사를 구분한다.
-- `node app-web/scripts/check.mjs --reuse-emulators`: 삭제 재생성 수정 후 PASS. 단위5·Rules1·서버/API3·독립 Chromium 브라우저7 모두16건, production 번들/헤더 설정 검사 통과. Node22·CLI15.34.2에서 이전13건으로 공식 suite 자동 시작/종료도 확인했고 최종 추가 회귀는 같은 demo suite를 명시적으로 재사용했다(tmp/codex/FIX-WEB-01-check.log). 운영 프로비저닝/배포는 하지 않았다.
+- `node app-web/scripts/check.mjs`: 새 공식 Emulator에서 단위5·Rules1·서버/API3·독립 Chromium 브라우저8 모두17건, production 번들/헤더 설정 검사 통과(`tmp/codex/FIX-WEB-01-transfer-fresh.log`). 영구 삭제로 확정 거절된 게스트 요청은 다음 사용자 확인 때 새 ID를 사용하고, 응답 유실에는 새 ID를 그대로 재시도한다. 초기 재사용 검사의 새 회귀 실패와 별개로 최종 새 suite가 통과했다. 운영 프로비저닝/배포는 하지 않았다.
 - 기존 목업 `node --test --test-isolation=none "web/tests/*.test.mjs"`:164/164, 화면 정합58/58. Android 검사 재사용/재실행으로 웹 동작을 주장하지 않는다.
 - `npm --prefix app-web audit --json`·`npm --prefix functions audit --json`: 운영/브라우저 각각0건. @grpc/grpc-js1.14.7, glob14.0.3, minimatch11.0.4 패치 버전을 override/lock에 고정하고 실제 Emulator/브라우저 흐름에서 호환성을 검사했다.
 - 개발 전용 Firebase CLI는15.34.2 최신 패치와 안전한 audit fix 후 moderate16건이 남는다(높음/치명0). glob/minimatch·uuid·OpenTelemetry 등의 간접 의존성이며 운영 번들/서버에 포함하지 않는다. localhost demo 고정 명령/경로만 실행하고 실제 사용자 입력 패턴·외부 공개 Emulator·인증 링크 로그를 허용하지 않는다. 감사 제안의 구형 CLI 강등과 minimatch의 함수API를 바꾸는 전역 major override는 적용하지 않는다. 개발 도구 경고까지0건이라고 주장하지 않는다.
@@ -40,4 +40,4 @@
 
 1차 읽기 전용 리뷰의 P2 네 건: 오래된 조회 덮어쓰기, 정상 목록의 과도한 호출 단위, pending 재요청이 worker를 재시작하지 않음, 재인증/폴링 후 세대 확인 누락. 조회 세대·서버 확인 응답의 메모리 반영·요청당1단위·deletionRetryAt·세션/epoch 재검사로 수정했다. 2차에서 영수증 분실 뒤 새 확인 정보로 재개·최신 배열 완료 트랜잭션·이미deleted 응답 즉시 처리를 대조했고 최종 APPROVED. 리뷰는 읽기 전용이며 직접 검사 재실행/운영 호출은 하지 않았다. 최종 SHA 검사는 별도 worktree·장부를 따른다.
 
-커밋 후 별도 worktree 리뷰는 afd2345의 영구 삭제 후 과거 create 재시도에 의한 재생성 P2를 발견해 WARNING 판정했다. 해당 SHA는 승인 장부에 넣지 않는다. [FIX-WEB-01](../plans/FIX-WEB-01-create-receipts.md)에서 서버/게스트 최소 영수증·수명 생성요청 한도·원본 보존 이관을 추가했다. 원생성·중복 응답 유실 뒤 재생성 차단과 URL을 바꾼 중복 재시도의 입력 보존을 검증했으며 최종16건이 통과했다. 수정 커밋의 구현/고정 SHA 재리뷰는 별도 기록한다.
+커밋 후 별도 worktree 리뷰는 afd2345의 영구 삭제 후 과거 create 재시도 재생성과 59726b2의 게스트 재이동 차단을 각각 WARNING 판정했다. 두 SHA는 승인 장부에 넣지 않는다. [FIX-WEB-01](../plans/FIX-WEB-01-create-receipts.md)에서 최소 영수증·생성요청 한도·이관·다음 명시적 이동을 보강했다. 독립 구현 리뷰 APPROVED 및 최종17건 통과. 고정 SHA 재리뷰는 별도 기록한다.

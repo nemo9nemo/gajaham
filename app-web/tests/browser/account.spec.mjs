@@ -133,6 +133,37 @@ test('partial guest transfer keeps rejected originals and moves only acknowledge
   await page.getByRole('button', { name: '계정', exact: true }).click(); await page.getByRole('button', { name: '로그아웃', exact: true }).click();
   await expect(page.locator('.place-card h3')).toHaveText('실패해서 남길 기록');
 });
+test('a retained guest record can be transferred again only after a new confirmation', async ({ page }) => {
+  const source = 'https://instagram.com/p/GUEST_REARM/';
+  await page.goto('/'); await add(page, '브라우저 원본', '', source);
+  await auth(page, email(), 'signup'); await add(page, '계정 중복 대상', '', source);
+  const move = async () => {
+    await page.getByRole('button', { name: '계정에 담기 →' }).click();
+    await page.getByRole('button', { name: '이 계정에 담기', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  };
+  const requests = []; let dropResponse = false;
+  await page.route(apiUrl, async route => {
+    const data = route.request().postDataJSON().data;
+    if (data.action === 'create') {
+      requests.push(data.payload.requestId);
+      if (dropResponse) { dropResponse = false; await route.fetch(); await route.abort('failed'); return; }
+    }
+    await route.continue();
+  });
+  await move(); await expect(page.locator('.guest-notice')).toContainText('계정에 담지 않은 기록 1개');
+  await page.locator('.place-card').getByRole('button').click(); await page.getByRole('button', { name: '휴지통으로', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0); await page.getByRole('button', { name: '계정', exact: true }).click(); await page.getByRole('button', { name: '휴지통 보기' }).click();
+  await page.locator('.place-card').getByRole('button').click(); page.once('dialog', dialog => dialog.accept()); await page.getByRole('button', { name: '영구 삭제', exact: true }).click();
+  await expect(page.locator('.place-card')).toHaveCount(0);
+  await move(); await expect(page.getByText('삭제된 대상의 기록은 계정에 담기를 다시 확인해')).toBeVisible();
+  expect(requests).toHaveLength(2); expect(requests[1]).toBe(requests[0]);
+  await page.reload(); dropResponse = true;
+  await move(); await expect(page.locator('.guest-notice')).toContainText('계정에 담지 않은 기록 1개');
+  expect(requests[2]).not.toBe(requests[0]);
+  await move(); expect(requests[3]).toBe(requests[2]);
+  await expect(page.locator('.place-card h3')).toHaveText('브라우저 원본'); await expect(page.locator('.guest-notice')).toHaveCount(0);
+});
 for (const duplicateFirst of [false, true]) test(`permanent deletion cannot be undone by an old ${duplicateFirst ? 'duplicate' : 'original'} create retry`, async ({ page, browser }) => {
   const address = email(); const sourceUrl = 'https://instagram.com/p/REMOVED_RETRY/'; await page.goto('/'); await auth(page, address, 'signup'); let lost = false;
   if (duplicateFirst) await add(page, '영구 삭제한 기록', '', sourceUrl);

@@ -1,7 +1,7 @@
 import './style.css';
 import { CATEGORIES, escaped as e, editableInput as normalizeInput, normalizeUrl } from './domain.mjs';
 import * as gateway from './gateway.mjs';
-import { allGuest, createGuest, mutateGuest, removeTransferredGuest } from './guest.mjs';
+import { allGuest, createGuest, mutateGuest, guestTransferId, rearmGuestTransfer, removeTransferredGuest } from './guest.mjs';
 
 const app = document.querySelector('#app');
 const state = { owner: 'loading', user: null, records: [], tab: 'all', category: 'all', query: '', loading: true, failure: '', guestCount: 0, deleting: false };
@@ -222,19 +222,25 @@ document.addEventListener('click', event => {
   if (action === 'transfer') { void transfer(); return; }
   if (action === 'confirm-transfer') {
     void run(async () => {
-      const rows = (await allGuest()).filter(row => row.state !== 'trash'); let moved = 0; let kept = 0;
+      const rows = (await allGuest()).filter(row => row.state !== 'trash'); let moved = 0; let kept = 0; let canRetry = false;
       for (const row of rows) {
         if (!same(current)) break;
+        const requestId = guestTransferId(row, current.owner);
         try {
           const input = normalizeInput({ sourceUrl: row.sourceUrl, name: row.name, address: row.address, category: row.category, memo: row.memo, menu: row.menu, visited: row.visited });
-          const result = await gateway.api(current.owner, 'create', { requestId: row.id, record: input });
+          const result = await gateway.api(current.owner, 'create', { requestId, record: input });
           if (!same(current)) break;
-          if (!result.duplicate && await removeTransferredGuest(row.id, row.revision)) moved++; else kept++;
-        } catch { kept++; }
+          if (!result.duplicate && await removeTransferredGuest(row.id, row.revision, { uid: current.owner, requestId })) moved++; else kept++;
+        } catch (error) {
+          kept++;
+          if (same(current) && error.code === 'failed-precondition' && error.reason === 'retired-create-request') {
+            try { if (await rearmGuestTransfer(row.id, row.revision, current.owner, requestId)) canRetry = true; } catch { /* Keep the original if local storage is unavailable. */ }
+          }
+        }
         const status = dialog?.querySelector('#transfer-status'); if (status) status.textContent = `${moved}개 계정 저장 확인 · ${kept}개 브라우저에 유지`;
       }
-      return { moved, kept };
-    }, async result => { closeDialog(true); toast(`${result.moved}개를 계정에 담았어요. ${result.kept}개는 브라우저에 남겼어요.`); await refresh(current); }); return;
+      return { moved, kept, canRetry };
+    }, async result => { closeDialog(true); toast(`${result.moved}개를 계정에 담았어요. ${result.kept}개는 브라우저에 남겼어요.${result.canRetry ? ' 삭제된 대상의 기록은 계정에 담기를 다시 확인해 새로 저장할 수 있어요.' : ''}`); await refresh(current); }); return;
   }
   if (action === 'delete-account') { openDialog('계정과 기록을 삭제할까요?', '<p class="form-intro">계정의 모든 개인 기록을 서버에서 지운 뒤 인증 계정을 삭제해요. 복구할 수 없습니다. 이 브라우저의 게스트 기록은 유지돼요.</p><form data-form="delete"><label>현재 비밀번호<input type="password" name="password" required maxlength="128" autocomplete="current-password"></label><button class="button danger full-width" type="submit">계정과 서버 기록 삭제</button></form>', 'delete'); return; }
   if (action === 'check-deletion') { void run(() => checkDeletion(current)); return; }

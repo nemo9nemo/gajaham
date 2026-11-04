@@ -57,7 +57,7 @@ async function send(action, payload, token, appToken) {
       body: JSON.stringify({ data: { action, payload } }), signal: controller.signal, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer'
     });
     const body = await response.json();
-    if (!response.ok || body.error) throw Object.assign(new Error(), { code: body.error?.status?.toLowerCase().replaceAll('_', '-') ?? 'unavailable', safeMessage: body.error?.message });
+    if (!response.ok || body.error) throw Object.assign(new Error(), { code: body.error?.status?.toLowerCase().replaceAll('_', '-') ?? 'unavailable', safeMessage: body.error?.message, reason: body.error?.details?.reason });
     return body.result ?? body.data;
   } finally { clearTimeout(timer); }
 }

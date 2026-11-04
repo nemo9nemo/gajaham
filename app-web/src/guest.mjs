@@ -63,6 +63,22 @@ export async function mutateGuest(action, data) {
     store.put(row);
   });
 }
-export async function removeTransferredGuest(id, expectedRevision) {
-  return transaction(async (store, removed) => { const row = await request(store.get(id)); if (!row) return true; if (row.revision !== expectedRevision) return false; removed.put({ id }); store.delete(id); return true; });
+export function guestTransferId(row, uid) {
+  return row.transferAttempts?.find(attempt => attempt.uid === uid)?.requestId ?? row.id;
+}
+export async function rearmGuestTransfer(id, expectedRevision, uid, previousId) {
+  return transaction(async store => {
+    const row = await request(store.get(id));
+    if (!row || row.revision !== expectedRevision || guestTransferId(row, uid) !== previousId) return false;
+    const attempts = (row.transferAttempts ?? []).filter(attempt => attempt.uid !== uid);
+    if (attempts.length >= 16) return false;
+    const updated = { ...row, transferAttempts: [...attempts, { uid, requestId: crypto.randomUUID() }] };
+    const rows = await request(store.getAll());
+    if (rows.reduce((sum, item) => sum + bytes(item.id === id ? updated : item), 0) > MAX_BYTES) return false;
+    store.put(updated);
+    return true;
+  });
+}
+export async function removeTransferredGuest(id, expectedRevision, attempt) {
+  return transaction(async (store, removed) => { const row = await request(store.get(id)); if (!row) return true; if (row.revision !== expectedRevision || (attempt && guestTransferId(row, attempt.uid) !== attempt.requestId)) return false; removed.put({ id }); store.delete(id); return true; });
 }

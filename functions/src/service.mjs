@@ -38,11 +38,11 @@ export function createService({ db, auth, now = Date.now }) {
       active(meta.data());
       if (removed.data()?.duplicateOf) {
         const target = await tx.get(recordRef(uid, removed.data().duplicateOf));
-        if (!target.exists) fail('failed-precondition', '이전 요청의 대상 기록은 삭제됐어요. 새 저장은 새로 시작해 주세요.');
+        if (!target.exists) fail('failed-precondition', '이전 요청의 대상 기록은 삭제됐어요. 새 저장은 새로 시작해 주세요.', { reason: 'retired-create-request' });
         if (target.data().canonicalSource !== input.canonicalSource) fail('already-exists', '다른 링크는 새 저장 요청으로 시작해 주세요.');
         return { duplicate: true, id: removed.data().duplicateOf };
       }
-      if (removed.exists) fail('failed-precondition', '이 저장 요청의 기록은 이미 삭제됐어요. 이전 요청으로 다시 만들 수 없어요.');
+      if (removed.exists) fail('failed-precondition', '이 저장 요청의 기록은 이미 삭제됐어요. 이전 요청으로 다시 만들 수 없어요.', { reason: 'retired-create-request' });
       if (old.exists) {
         if (old.data().createFingerprint !== hash) fail('already-exists', '같은 요청으로 다른 내용을 저장할 수 없어요.');
         return { record: publicRecord(old.data()), duplicate: false };

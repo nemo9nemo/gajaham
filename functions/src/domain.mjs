@@ -4,9 +4,9 @@ export const MAX_CREATE_REQUESTS = 100000;
 export const MAX_BYTES = 2 * 1024 * 1024;
 export const TRASH_MS = 30 * 86400000;
 export class DomainError extends Error {
-  constructor(code, message) { super(message); this.code = code; }
+  constructor(code, message, details) { super(message); this.code = code; this.details = details; }
 }
-export function fail(code, message) { throw new DomainError(code, message); }
+export function fail(code, message, details) { throw new DomainError(code, message, details); }
 export function object(value, keys) {
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(k => !keys.includes(k))) fail('invalid-argument', '입력 항목을 확인해 주세요.');
   return value;
