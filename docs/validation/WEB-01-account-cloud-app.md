@@ -5,7 +5,7 @@
 ## 실행 결과
 
 - Node22.23.4(공식 배포 SHA256 확인)·Java21.0.13·Firebase CLI15.34.2, 배포 runtime nodejs22. 초기 Node24 검사와 최종 Node22 검사를 구분한다.
-- `node app-web/scripts/check.mjs`: PASS. 단위4·Rules1·서버/API3·독립 Chromium 브라우저5 모두13건 통과, production 번들/헤더 설정 검사 통과. 최종 Node22·CLI15.34.2에서 공식 suite 자동 시작/종료도 확인했다. 운영 프로비저닝/배포는 하지 않았다.
+- `node app-web/scripts/check.mjs --reuse-emulators`: 삭제 재생성 수정 후 PASS. 단위5·Rules1·서버/API3·독립 Chromium 브라우저7 모두16건, production 번들/헤더 설정 검사 통과. Node22·CLI15.34.2에서 이전13건으로 공식 suite 자동 시작/종료도 확인했고 최종 추가 회귀는 같은 demo suite를 명시적으로 재사용했다(tmp/codex/FIX-WEB-01-check.log). 운영 프로비저닝/배포는 하지 않았다.
 - 기존 목업 `node --test --test-isolation=none "web/tests/*.test.mjs"`:164/164, 화면 정합58/58. Android 검사 재사용/재실행으로 웹 동작을 주장하지 않는다.
 - `npm --prefix app-web audit --json`·`npm --prefix functions audit --json`: 운영/브라우저 각각0건. @grpc/grpc-js1.14.7, glob14.0.3, minimatch11.0.4 패치 버전을 override/lock에 고정하고 실제 Emulator/브라우저 흐름에서 호환성을 검사했다.
 - 개발 전용 Firebase CLI는15.34.2 최신 패치와 안전한 audit fix 후 moderate16건이 남는다(높음/치명0). glob/minimatch·uuid·OpenTelemetry 등의 간접 의존성이며 운영 번들/서버에 포함하지 않는다. localhost demo 고정 명령/경로만 실행하고 실제 사용자 입력 패턴·외부 공개 Emulator·인증 링크 로그를 허용하지 않는다. 감사 제안의 구형 CLI 강등과 minimatch의 함수API를 바꾸는 전역 major override는 적용하지 않는다. 개발 도구 경고까지0건이라고 주장하지 않는다.
@@ -21,6 +21,7 @@
 | 중복·동시 수정 | 두 생성 경합 중 같은 링크 한 건만 생성, 동일 요청 재시도revision 유지, 오래된 수정aborted·UI 충돌 안내 |
 | 늦은 조회 | 옛 목록 응답을 지연하고 새 저장을 먼저 완료시킨 뒤 응답을 풀어도 새 기록 유지 |
 | 영속 게스트·부분 정리 | IndexedDB 커밋/재조회·중복·수정 충돌·서버 업로드 뒤 로컬revision이 달라지면 원본 유지·만료 휴지통 정리 |
+| 삭제된 생성 요청 | A서버 커밋/응답 유실→B조회·휴지통·영구 삭제→A같은 보존 폼 재시도 거절·서버0건. 게스트 v1 원본 보존→v2 최소 영수증으로 영구삭제/만료/이동 후 요청 재생성 거절. 원생성/중복 응답 유실 재시도 모두 차단·createdCount는 중복/재시도 불변·operationCount는 최초 중복만 증가·기존 profile 개수 보존·처리요청10만개 한도·탈퇴시 최소 영수증 제거 |
 | 탈퇴 | 최근 인증·persistent pending·pending 쓰기 거절·원본/인증 정리·중복 cleanup, 두 영수증 동시 재요청의 허용된 요청 모두 완료, 실제 서버 트리거→영수증 결과deleted→UI 게스트 복귀 |
 | XSS/링크 | `<img ... onerror>` 메모를 텍스트로만 표시·실행되지 않음, javascript/data/file/URL 자격증명 거절, 외부 링크noopener/noreferrer |
 | 화면 | 실제 Chromium390×844·1440×960 스크린샷 시각 확인, 모바일 가로 넘침 없음 |
@@ -38,3 +39,5 @@
 ## 독립 리뷰
 
 1차 읽기 전용 리뷰의 P2 네 건: 오래된 조회 덮어쓰기, 정상 목록의 과도한 호출 단위, pending 재요청이 worker를 재시작하지 않음, 재인증/폴링 후 세대 확인 누락. 조회 세대·서버 확인 응답의 메모리 반영·요청당1단위·deletionRetryAt·세션/epoch 재검사로 수정했다. 2차에서 영수증 분실 뒤 새 확인 정보로 재개·최신 배열 완료 트랜잭션·이미deleted 응답 즉시 처리를 대조했고 최종 APPROVED. 리뷰는 읽기 전용이며 직접 검사 재실행/운영 호출은 하지 않았다. 최종 SHA 검사는 별도 worktree·장부를 따른다.
+
+커밋 후 별도 worktree 리뷰는 afd2345의 영구 삭제 후 과거 create 재시도에 의한 재생성 P2를 발견해 WARNING 판정했다. 해당 SHA는 승인 장부에 넣지 않는다. [FIX-WEB-01](../plans/FIX-WEB-01-create-receipts.md)에서 서버/게스트 최소 영수증·수명 생성요청 한도·원본 보존 이관을 추가했다. 원생성·중복 응답 유실 뒤 재생성 차단과 URL을 바꾼 중복 재시도의 입력 보존을 검증했으며 최종16건이 통과했다. 수정 커밋의 구현/고정 SHA 재리뷰는 별도 기록한다.

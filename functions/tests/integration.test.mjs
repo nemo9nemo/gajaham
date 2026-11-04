@@ -17,8 +17,13 @@ test('UID isolation, strict inputs, race-safe duplicates, revision conflict, ide
   await assert.rejects(call(uidB, 'update', { id: rid, revision: 1, requestId: crypto.randomUUID(), record: input }), { code: 'not-found' });
   await assert.rejects(call(uid, 'create', { requestId: crypto.randomUUID(), record: { ...input, uid: uidB } }), { code: 'invalid-argument' });
   const linked = { ...input, sourceUrl: 'https://instagram.com/p/INTEGRATION/' };
-  const results = await Promise.all([1, 2].map(() => call(uid, 'create', { requestId: crypto.randomUUID(), record: linked })));
+  const linkedIds = [crypto.randomUUID(), crypto.randomUUID()];
+  const results = await Promise.all(linkedIds.map(requestId => call(uid, 'create', { requestId, record: linked })));
   assert.equal(results.filter(r => r.duplicate).length, 1);
+  const duplicateId = linkedIds[results.findIndex(r => r.duplicate)];
+  assert.equal((await call(uid, 'create', { requestId: duplicateId, record: linked })).duplicate, true);
+  await assert.rejects(call(uid, 'create', { requestId: duplicateId, record: { ...linked, sourceUrl: 'https://example.invalid/changed' } }), { code: 'already-exists' });
+  assert.equal((await db.doc(`users/${uid}`).get()).data().operationCount, 3);
   const payload = { id: rid, revision: 1, requestId: crypto.randomUUID(), record: { ...input, memo: '<script>safe text</script>' } };
   const updated = await call(uid, 'update', payload); assert.equal(updated.record.revision, 2);
   assert.equal((await call(uid, 'update', payload)).record.revision, 2);
@@ -27,11 +32,34 @@ test('UID isolation, strict inputs, race-safe duplicates, revision conflict, ide
   await call(uid, 'trash', { id: rid, revision: 2, requestId: crypto.randomUUID() });
   await call(uid, 'restore', { id: rid, revision: 3, requestId: crypto.randomUUID() });
   assert.equal((await call(uid, 'list')).items.find(r => r.id === rid).revision, 4);
+  const count = (await db.doc(`users/${uid}`).get()).data().createdCount;
+  assert.equal(count, 2); // Duplicate and idempotent requests did not consume slots.
+  await call(uid, 'trash', { id: rid, revision: 4, requestId: crypto.randomUUID() });
+  await call(uid, 'remove', { id: rid, revision: 5, requestId: crypto.randomUUID() });
+  await assert.rejects(call(uid, 'create', { requestId: rid, record: input }), { code: 'failed-precondition' });
+  assert.deepEqual((await db.doc(`users/${uid}/removedRequests/${rid}`).get()).data(), { removed: true });
+  assert.equal((await db.doc(`users/${uid}`).get()).data().createdCount, count);
+  const original = results.find(r => !r.duplicate).record;
+  await call(uid, 'trash', { id: original.id, revision: 1, requestId: crypto.randomUUID() });
+  await call(uid, 'remove', { id: original.id, revision: 2, requestId: crypto.randomUUID() });
+  await assert.rejects(call(uid, 'create', { requestId: duplicateId, record: linked }), { code: 'failed-precondition' });
+  assert.equal((await db.doc(`users/${uid}`).get()).data().operationCount, 3);
+  // Legacy profiles start the new lifetime counter from existing live count.
+  await call(uidB, 'create', { requestId: crypto.randomUUID(), record: input });
+  const { createdCount: ignored, operationCount: ignoredOperation, ...legacyProfile } = (await db.doc(`users/${uidB}`).get()).data();
+  await db.doc(`users/${uidB}`).set(legacyProfile);
+  await call(uidB, 'create', { requestId: crypto.randomUUID(), record: input });
+  assert.equal((await db.doc(`users/${uidB}`).get()).data().createdCount, 2);
+  assert.equal((await db.doc(`users/${uidB}`).get()).data().operationCount, 2);
+  assert.equal((await call(uidB, 'list')).items.length, 2);
 });
 test('server caps and persistent deletion fence, retry cleanup with no record resurrection', async () => {
-  await db.doc(`users/${uidB}`).update({ count: 5000 });
+  await db.doc(`users/${uidB}`).update({ operationCount: 100000 });
+  await assert.rejects(call(uidB, 'create', { requestId: crypto.randomUUID(), record: input }), { code: 'resource-exhausted' });
+  await db.doc(`users/${uidB}`).update({ operationCount: 2, count: 5000 });
   await assert.rejects(call(uidB, 'create', { requestId: crypto.randomUUID(), record: input }), { code: 'resource-exhausted' });
   await auth.createUser({ uid: uidB });
+  await db.doc(`users/${uidB}/removedRequests/${crypto.randomUUID()}`).set({ removed: true });
   await assert.rejects(service.handle(uidB, Date.now() / 1000 - 600, 'startDeletion', { receipt }), { code: 'failed-precondition' });
   assert.equal((await call(uidB, 'startDeletion', { receipt })).state, 'deleting');
   await assert.rejects(call(uidB, 'create', { requestId: crypto.randomUUID(), record: input }), { code: 'failed-precondition' });
@@ -39,6 +67,7 @@ test('server caps and persistent deletion fence, retry cleanup with no record re
   assert.equal((await service.deletionStatus({ receipt })).state, 'deleted');
   assert.equal((await service.deletionStatus({ receipt: 'f'.repeat(64) })).state, 'unknown');
   assert.equal((await db.doc(`users/${uidB}`).collection('records').get()).size, 0);
+  assert.equal((await db.doc(`users/${uidB}`).collection('removedRequests').get()).size, 0);
   await assert.rejects(auth.getUser(uidB), { code: 'auth/user-not-found' });
   await assert.rejects(call(uidB, 'list'), { code: 'failed-precondition' });
 });

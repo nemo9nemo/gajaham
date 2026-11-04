@@ -38,6 +38,8 @@
 
 ## 산출물과 검증
 
+WEB-01 영구 삭제/휴지통 만료는 원문·출처와 함께 트랜잭션에서 최소 `removedRequests/{생성요청UUID}`와 중복 요청의 대상UUID만 남겨 다른 기기의 오래된 create 재시도로 기록을 되살리지 못하게 한다. 원문/내용지문 없이 계정 탈퇴까지 유지하고 worker가 함께 정리한다. 계정당 수명 누적 생성요청10만개 한도로 이 메타 비용도 제한한다(최초 중복 처리 포함, 이미 처리된 요청 재시도 제외). 게스트 IndexedDB는 v2이며 v1 원본을 보존하고 같은 최소 ID를 사이트 데이터 삭제 때까지 유지한다.
+
 정적 목업 UI는 `web/`에 있고 P0 58개 화면 카탈로그와 목 데이터 상태 전이를 제공하는 의존성 없는 HTML·CSS·ES 모듈이다(docs/decisions/0001-static-mock-ui-stack.md). 패키지를 추가하지 않는다. Node는 Codex 런타임 v24 기준이다. 실제 로그인·DM·분석·DB 연동과 정적 목업의 동작을 구분한다.
 
 - 단위·화면 테스트: `node --test --test-isolation=none "web/tests/*.test.mjs"`

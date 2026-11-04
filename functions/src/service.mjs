@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { Timestamp, FieldPath } from 'firebase-admin/firestore';
-import { DomainError, fail, object, normalizeInput, id, revision, bytes, publicRecord, MAX_BYTES, MAX_RECORDS, TRASH_MS } from './domain.mjs';
+import { DomainError, fail, object, normalizeInput, id, revision, bytes, publicRecord, MAX_BYTES, MAX_RECORDS, MAX_CREATE_REQUESTS, TRASH_MS } from './domain.mjs';
 
 const digest = value => createHash('sha256').update(value).digest('hex');
 const fingerprint = value => digest(JSON.stringify(value));
@@ -9,13 +9,14 @@ const active = data => { if (data?.state !== 'active') fail('failed-precondition
 export function createService({ db, auth, now = Date.now }) {
   const profileRef = uid => db.collection('users').doc(uid);
   const recordRef = (uid, recordId) => profileRef(uid).collection('records').doc(recordId);
+  const removedRef = (uid, recordId) => profileRef(uid).collection('removedRequests').doc(recordId);
   const sourceRef = (uid, canonical) => profileRef(uid).collection('sources').doc(digest(canonical));
   async function profile(uid) {
     const ref = profileRef(uid);
     return db.runTransaction(async tx => {
       const snap = await tx.get(ref);
       if (snap.exists) return snap.data();
-      const value = { state: 'active', count: 0, bytes: 0, createdAt: now(), updatedAt: now() };
+      const value = { state: 'active', count: 0, createdCount: 0, operationCount: 0, bytes: 0, createdAt: now(), updatedAt: now() };
       tx.create(ref, value); return value;
     });
   }
@@ -33,18 +34,32 @@ export function createService({ db, auth, now = Date.now }) {
     object(data, ['requestId', 'record']); const requestId = id(data.requestId); const input = normalizeInput(data.record); const hash = fingerprint(input);
     const ref = recordRef(uid, requestId); const user = profileRef(uid); const source = input.canonicalSource ? sourceRef(uid, input.canonicalSource) : null;
     return db.runTransaction(async tx => {
-      const [meta, old, existing] = await Promise.all([tx.get(user), tx.get(ref), source ? tx.get(source) : Promise.resolve(null)]);
+      const [meta, old, existing, removed] = await Promise.all([tx.get(user), tx.get(ref), source ? tx.get(source) : Promise.resolve(null), tx.get(removedRef(uid, requestId))]);
       active(meta.data());
+      if (removed.data()?.duplicateOf) {
+        const target = await tx.get(recordRef(uid, removed.data().duplicateOf));
+        if (!target.exists) fail('failed-precondition', '이전 요청의 대상 기록은 삭제됐어요. 새 저장은 새로 시작해 주세요.');
+        if (target.data().canonicalSource !== input.canonicalSource) fail('already-exists', '다른 링크는 새 저장 요청으로 시작해 주세요.');
+        return { duplicate: true, id: removed.data().duplicateOf };
+      }
+      if (removed.exists) fail('failed-precondition', '이 저장 요청의 기록은 이미 삭제됐어요. 이전 요청으로 다시 만들 수 없어요.');
       if (old.exists) {
         if (old.data().createFingerprint !== hash) fail('already-exists', '같은 요청으로 다른 내용을 저장할 수 없어요.');
         return { record: publicRecord(old.data()), duplicate: false };
       }
-      if (existing?.exists) return { duplicate: true, id: existing.data().recordId };
+      const state = meta.data(); const createdCount = state.createdCount ?? state.count;
+      const operationCount = state.operationCount ?? createdCount;
+      if (operationCount >= MAX_CREATE_REQUESTS) fail('resource-exhausted', '계정의 누적 저장 요청 한도에 도달했어요. 문의 창구를 이용해 주세요.');
+      if (existing?.exists) {
+        tx.set(removedRef(uid, requestId), { duplicateOf: existing.data().recordId });
+        tx.update(user, { operationCount: operationCount + 1, updatedAt: now() });
+        return { duplicate: true, id: existing.data().recordId };
+      }
       const value = { id: requestId, ...input, state: input.name && input.address ? 'saved' : 'inbox', deletedAt: null, createdAt: now(), updatedAt: now(), revision: 1, createRequestId: requestId, lastRequestId: requestId, createFingerprint: hash, lastFingerprint: hash };
-      const size = bytes(value); const state = meta.data();
+      const size = bytes(value);
       if (state.count >= MAX_RECORDS || state.bytes + size > MAX_BYTES) fail('resource-exhausted', '보관 한도에 도달했어요. 휴지통을 정리한 뒤 다시 시도해 주세요.');
       tx.create(ref, value); if (source) tx.create(source, { recordId: requestId });
-      tx.update(user, { count: state.count + 1, bytes: state.bytes + size, updatedAt: now() });
+      tx.update(user, { count: state.count + 1, createdCount: createdCount + 1, operationCount: operationCount + 1, bytes: state.bytes + size, updatedAt: now() });
       return { record: publicRecord(value), duplicate: false };
     });
   }
@@ -64,6 +79,7 @@ export function createService({ db, auth, now = Date.now }) {
       if (['restore', 'remove'].includes(action) && old.state !== 'trash') fail('failed-precondition', '휴지통의 기록만 처리할 수 있어요.');
       if (action === 'restore' && now() - old.deletedAt >= TRASH_MS) fail('failed-precondition', '복원 기한이 지났어요.');
       if (action === 'remove') {
+        tx.set(removedRef(uid, recordId), { removed: true });
         tx.delete(ref); if (old.canonicalSource) tx.delete(sourceRef(uid, old.canonicalSource));
         tx.update(user, { count: Math.max(0, meta.data().count - 1), bytes: Math.max(0, meta.data().bytes - bytes(old)), updatedAt: now() });
         return { removed: recordId };
@@ -120,6 +136,7 @@ export function createService({ db, auth, now = Date.now }) {
     if (meta.data()?.state !== 'deleting') return;
     await db.recursiveDelete(ref.collection('records'));
     await db.recursiveDelete(ref.collection('sources'));
+    await db.recursiveDelete(ref.collection('removedRequests'));
     try { await auth.deleteUser(uid); } catch (error) { if (error.code !== 'auth/user-not-found') throw error; }
     await db.collection('apiLimits').doc(uid).delete();
     const completed = { state: 'deleted', deletedAt: now(), purgeAt: Timestamp.fromMillis(now() + 7 * 86400000) };

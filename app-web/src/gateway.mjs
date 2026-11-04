@@ -65,6 +65,7 @@ export function errorMessage(error) {
   const code = String(error?.code ?? '').replace(/^auth\//, '');
   if (code === 'aborted') return '다른 기기에서 기록이 변경됐어요. 창을 닫고 최신 기록을 확인한 뒤 다시 수정해 주세요.';
   if (code === 'session-changed') return '계정이 바뀌었어요. 현재 계정에서 다시 시작해 주세요.';
+  if (code === 'already-exists') return '이 요청은 다른 내용으로 처리됐어요. 기록을 확인한 뒤 새로 담기를 시작해 주세요.';
   if (code === 'weak-password') return '비밀번호는 영문과 숫자를 포함해 12자 이상으로 만들어 주세요.';
   if (code === 'resource-exhausted' || code === 'too-many-requests') return '요청이 많거나 보관 한도에 도달했어요. 잠시 뒤 다시 시도해 주세요.';
   if (code === 'failed-precondition') return '최근 인증이 필요하거나 기록 상태가 바뀌었어요. 새로 확인한 뒤 다시 시도해 주세요.';

@@ -1,5 +1,6 @@
 export const CATEGORIES = Object.freeze({ food: '맛집', cafe: '카페', play: '놀거리', stay: '숙소', other: '기타' });
 export const MAX_RECORDS = 5000;
+export const MAX_CREATE_REQUESTS = 100000;
 export const MAX_BYTES = 2 * 1024 * 1024;
 export const TRASH_MS = 30 * 86400000;
 export class DomainError extends Error {

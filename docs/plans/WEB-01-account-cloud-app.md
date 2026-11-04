@@ -41,8 +41,12 @@ Node22·Java21·공식 CLI의 demo Auth/Firestore/Functions 통합 및 Chromium 
 
 실행 결과: `node app-web/scripts/check.mjs`13/13·production검사PASS, `node --test --test-isolation=none "web/tests/*.test.mjs"`164/164·카탈로그58/58. 390×844/1440×960 Chromium 화면을 실제 이미지로 확인했다. `preflight.mjs`는 운영 설정이 없는 현재 환경에서 의도대로 실패한다. Git diff check·17 ES 모듈 parse·민감키 marker 검사·8문서 상대 링크33개를 통과했다. 로그와 이미지는 Git 제외 tmp/codex/WEB-01-*에 둔다.
 
+커밋 후 리뷰의 삭제 재생성 지적을 수정해 최종 `node app-web/scripts/check.mjs --reuse-emulators`16/16·production PASS. 생성 응답 유실→다른 브라우저 영구 삭제→보존 폼 재시도 거절, v1 게스트 보존 이관, 최소 삭제 영수증과 계정 누적 생성요청10만개 제한(최초 중복 포함·재시도 제외)·탈퇴 정리를 추가했다. 원문 없이 요청UUID만 계정탈퇴/게스트사이트데이터삭제까지 남기는 정책도 UI/계약에 반영했다. 의존성 변경은 없다.
+
 운영 Firebase 계정0개이고 프로젝트/Blaze·메일/App Check·실제 문의처·Galaxy·공개 배포는 미실행이다. preflight는 미설정/가짜 설정을 거절한다. 운영/유료 활성화·도메인 구매·push/PR은 실행하지 않았다. 로컬 검증의 완료와 공개 출시를 구분한다.
 
 ## 리뷰 기록
 
 독립 읽기 전용 1차 리뷰 P2 네 건을 코드로 확인해 수정했다: 조회 세대 부재→조회 세대, 정상 목록 호출 과소 한도→요청당1단위와 저장 응답 직접 반영, pending 재요청 무효→실제 retryAt 갱신, 이전 탈퇴 폼 세션→await 뒤 UID/객체/epoch 재검사. 늦은 조회 회귀·부분 이동·응답 유실 검사도 추가했다. 2차에서 영수증 분실 뒤 동일 계정 재개와 완료 경합을 보강했다. 최신 hash 배열을 읽는 최종 트랜잭션·이미deleted 응답 즉시 완료까지 대조한 최종 판정은 APPROVED. 리뷰 세션은 파일 수정/운영 호출/직접 검사 재실행 없이 코드와 기존 증거를 검토했다. 커밋된 SHA의 별도 worktree main 대비 리뷰는 별도 장부에 기록한다.
+
+첫 고정 SHA afd2345는 별도 리뷰에서 P2 영구 삭제 후 과거 생성 재시도 재생성을 발견해 WARNING. 승인 장부에 넣지 않는다. [FIX-WEB-01](FIX-WEB-01-create-receipts.md)에서 최소 영수증·요청 한도·게스트 v2 및 회귀 검사를 보강했고 2026-11-04 독립 구현 리뷰 APPROVED. 새 SHA 판정은 별도 장부에서 관리한다.
