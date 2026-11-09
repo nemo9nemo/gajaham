@@ -1,3 +1,5 @@
+> 2026-11-09: 현재 서버/비용 정책은 결정0010·WEB-02-no-billing이다. 이 문서의 Blaze·Functions·Firestore·TTL 운영 경로는 이전 이력이며 새 출시 조건이 아니다. 실제 출시 잔여 항목은 docs/research/no-billing-stack-2026-11-09.md와 docs/validation/WEB-02-no-billing.md를 따른다.
+
 # WEB-01 실제 개인 기록 웹앱
 
 - 상태: DONE · 개인 웹/서버 구현·로컬 검사·독립 구현 리뷰 완료. 운영 연결/검사·공개 배포 미완료

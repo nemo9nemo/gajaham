@@ -22,3 +22,8 @@ functions/node_modules/
 .firebase/
 *-debug.log
 .firebaserc
+worker/node_modules/
+worker/dist/
+worker/.wrangler/
+worker/.dev.vars
+/.wrangler/

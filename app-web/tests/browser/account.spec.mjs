@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 const password = 'LocalOnlyTestPassword123';
-const apiUrl = 'http://127.0.0.1:5101/demo-gajaham-web/asia-northeast3/personalApi';
+const apiUrl = 'http://127.0.0.1:8787/personalApi';
 const authUrl = 'http://127.0.0.1:9199/identitytoolkit.googleapis.com/v1/accounts:';
 const email = () => `emulator-${crypto.randomUUID()}@example.invalid`;
 async function auth(page, address, kind = 'login', empty = true) {

@@ -1,3 +1,5 @@
+> 2026-11-09: 현재 서버/비용 정책은 결정0010·WEB-02-no-billing이다. 이 문서의 Blaze·Functions·Firestore·TTL 운영 경로는 이전 이력이며 새 출시 조건이 아니다. 실제 출시 잔여 항목은 docs/research/no-billing-stack-2026-11-09.md와 docs/validation/WEB-02-no-billing.md를 따른다.
+
 # 가자함 실제 출시까지 남은 작업
 
 **2026-11-03 최신 저장 요구:** URL 접속 웹앱에서 로그인 기록을 서버에 보관하고 같은 계정으로 다른 기기/브라우저에서 조회한다. [결정 0008](../decisions/0008-account-cloud-records.md)·[AUTH-03](../plans/AUTH-03-account-cloud-policy.md)이 아래 로그인 원본 로컬 전용 정책을 대체한다. Android/목업의 과거 검사와 웹 서버 기능 완료는 구분한다.

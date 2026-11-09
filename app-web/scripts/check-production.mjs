@@ -8,11 +8,13 @@ assert.equal(result.status, 0);
 for (const file of await readdir(root + 'app-web/dist/assets')) {
   assert.ok(!file.endsWith('.map'));
   const contents = await readFile(root + 'app-web/dist/assets/' + file, 'utf8');
-  for (const marker of ['demo-gajaham-web', '127.0.0.1:9199', '127.0.0.1:5101', 'connectAuthEmulator']) assert.ok(!contents.includes(marker), `Emulator marker in production asset: ${marker}`);
+  for (const marker of ['demo-gajaham-web', '127.0.0.1:9199', '127.0.0.1:8787', 'cloudfunctions.net/personalApi', 'connectAuthEmulator']) assert.ok(!contents.includes(marker), `Emulator/legacy marker in production asset: ${marker}`);
 }
 const config = JSON.parse(await readFile(root + 'firebase.json', 'utf8'));
+assert.ok(!config.functions && !config.firestore, 'Paid Functions/Firestore deployment removed from current configuration');
 const headers = Object.fromEntries(config.hosting.headers.find(h => h.source === '**').headers.map(h => [h.key, h.value]));
 assert.equal(headers['X-Content-Type-Options'], 'nosniff'); assert.equal(headers['X-Frame-Options'], 'DENY');
 for (const value of ["object-src 'none'", "frame-ancestors 'none'", "base-uri 'none'"]) assert.ok(headers['Content-Security-Policy'].includes(value));
 assert.ok(!headers['Content-Security-Policy'].includes("'unsafe-eval'"));
+assert.ok(!headers['Content-Security-Policy'].includes('https://*.workers.dev'));
 console.log('Production bundle excludes demo connections; hosting header configuration checked (live hosting unverified).');

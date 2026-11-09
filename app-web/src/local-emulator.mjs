@@ -4,4 +4,4 @@ export function connect(auth) {
   if (!['127.0.0.1', 'localhost'].includes(location.hostname)) throw new Error('LOCAL_ONLY');
   connectAuthEmulator(auth, 'http://127.0.0.1:9199', { disableWarnings: true });
 }
-export const endpoint = 'http://127.0.0.1:5101/demo-gajaham-web/asia-northeast3/personalApi';
+export const endpoint = 'http://127.0.0.1:8787/personalApi';

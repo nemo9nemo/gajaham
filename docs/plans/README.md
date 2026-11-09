@@ -4,16 +4,19 @@ Codex가 기획·구현·검증·독립 리뷰를 진행하는 작업 단위 브
 
 ## 현재 출시 방향: 웹앱
 
+2026-11-09 사용자 요구로 **결제수단·Blaze·초과 자동과금 없는 구성**으로 변경했다. 현재 기준은 [WEB-02](WEB-02-no-billing.md), [결정0010](../decisions/0010-no-billing-web-backend.md), [실제 사용 조사와 출시 잔여 표](../research/no-billing-stack-2026-11-09.md)다. Firebase Auth/Hosting Spark + Cloudflare Workers/D1 Free를 사용하며 무료 초과 시 실패/제한을 허용한다. 아래 WEB-01의 Blaze/예산/Functions 설명은 이력이다.
+
 2026-11-03 사용자 요구는 설치가 필요 없는 URL 접속 웹앱과 **로그인하면 어디서든 같은 계정의 개인 기록 조회**다. [결정 0008](../decisions/0008-account-cloud-records.md)·[계정 계약](../contracts/web-account-data.md)을 우선하며 게스트만 로컬 전용이다. 운영 계정/도메인 보유는 가정하지 않고 최소 비용을 검토한다. 아래 Android/목업 검사·정책 문서 완료는 실제 웹/서버 원본의 완료가 아니다.
 
 | 작업 | 범위 | 상태 |
 | --- | --- | --- |
+| [WEB-02](WEB-02-no-billing.md) | 결제 미연결 정책·실사용 조사·Workers/D1 Free 서버·보안·탈퇴 이전 | 로컬20개·production/Worker dry-run·audit0·구현 리뷰 APPROVED. 운영 Free/CPU/실메일/Galaxy/배포 미실행 · 정확한 SHA는 별도 장부 |
 | [WEB-00](WEB-00-webapp-transition.md) | 전환 결정·잔여 작업·무료 주소/최소 비용·후속 검증 | DONE · 문서/회귀164개/58화면/상대 링크91개·독립 구현 리뷰 통과. 실제 웹앱 기능·운영 설정·공개 배포 미착수 · SHA 판정은 별도 장부 |
 | [RES-01](RES-01-server-personal-data-research.md) | 출시 서버·개인별 저장의 실제 사례/권한/비용·정책 선택 조사 | DONE · 당시 문서5개/상대 링크26개·가상 산술PASS·독립 리뷰 통과. 조사 후 계정 서버 원본 선택은 AUTH-03, 실제 서비스는 미구현 · SHA 판정은 별도 장부 |
 | [AUTH-03](AUTH-03-account-cloud-policy.md) | 로그인 개인 원본 서버 보관·여러 기기 조회·게스트/사본·삭제/검사 정책 | DONE · 정책/계약27문서·상대 링크158개·독립 구현 리뷰r2 통과. 실제 웹·서버 원본·동기화 미구현 · SHA 판정은 별도 장부 |
 | [WEB-01](WEB-01-account-cloud-app.md) | 실제 개인 웹앱·이메일 인증·UID 서버 저장·게스트·동시 편집/삭제·보안 | 구현/검증 · 삭제 재생성 및 게스트 재이동 수정 후 로컬17개·목업164/58·운영 의존성audit0. 최신 수정 리뷰/SHA는 브리프·장부 참조. 개발 CLI moderate16 노출 제한. 운영 프로젝트/Blaze·App Check·실메일·Galaxy·공개 배포 미완료 |
 
-WEB-00/RES-01/AUTH-03의 미구현 표시는 당시 이력이다. 현재 WEB-01은 로그인+UID별 서버 개인 저장과 게스트 로컬/명시적 계정 저장을 구현했다. [현재 검사/실사용 전 남은 일](../validation/WEB-01-account-cloud-app.md)을 따른다. 다음은 운영 프로젝트 연결·예산/문의처·실메일/App Check/Galaxy·배포 검사다. 지도/검색·두 사람 공유·광고·DM/자동 분석은 후속이다. PWA는 선택이며 설치가 이용 조건이 아니다.
+WEB-00/RES-01/AUTH-03의 미구현 표시는 당시 이력이다. 현재 WEB-02는 WEB-01의 로그인+UID별 서버 저장을 결제 미연결 Workers/D1 Free로 이전하고 게스트/명시적 저장을 유지한다. [현재 검사/실사용 전 남은 일](../validation/WEB-02-no-billing.md)을 따른다. 다음은 운영 무료 프로젝트/결제 미연결 확인·문의처·실메일/App Check/CPU/Galaxy·배포 검사다. 지도/검색·두 사람 공유·광고·DM/자동 분석은 후속이다. PWA는 선택이며 설치가 이용 조건이 아니다.
 
 ## 정적 목업 자산
 

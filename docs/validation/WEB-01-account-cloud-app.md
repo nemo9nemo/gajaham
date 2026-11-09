@@ -1,3 +1,5 @@
+> 2026-11-09: 현재 서버/비용 정책은 결정0010·WEB-02-no-billing이다. 이 문서의 Blaze·Functions·Firestore·TTL 운영 경로는 이전 이력이며 새 출시 조건이 아니다. 실제 출시 잔여 항목은 docs/research/no-billing-stack-2026-11-09.md와 docs/validation/WEB-02-no-billing.md를 따른다.
+
 # WEB-01 · 실제 개인 웹앱 검사
 
 2026-11-03 Codex. 범위는 [브리프](../plans/WEB-01-account-cloud-app.md)·[결정0009](../decisions/0009-web-personal-api.md)다. 실제 운영 Google 계정·데이터는 사용하지 않았다. 가상 이메일/장소만 demo-gajaham-web 공식 Emulator에 생성했다.

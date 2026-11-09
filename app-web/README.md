@@ -1,49 +1,44 @@
-# 가자함 실제 웹앱 · WEB-01
+# 가자함 실제 웹앱 · WEB-02
 
-설치 없이 URL로 여는 개인 장소 보관함이다. 기존 `web/` 카탈로그와 별도다. 이메일 가입/로그인, 게스트 보관, 명시적 계정 이동, 링크·장소·메모·방문·휴지통, 서버 개인 기록과 계정 삭제를 구현했다. 지도 SDK·자동 분석·공유·DM·광고는 아직 없다.
+설치 없이 URL로 여는 개인 장소 보관함이다. 이메일 가입/로그인, 게스트 보관, 명시적 계정 이동, 링크·장소·메모·방문·휴지통, 서버 개인 원본과 계정 삭제를 구현한다. 지도 SDK·자동 분석·상대 연결·공유·DM·광고는 아직 없다.
 
-## 로컬 실행
+현재 비용 정책은 **Firebase Auth/Hosting Spark + Cloudflare Workers/D1 Free, 결제수단 미연결**이다. 한도 도달 시 사용이 제한될 수 있으며 자동 유료 전환하지 않는다. Functions/Firestore는 이력이다. [조사·출시까지 남은 항목](../docs/research/no-billing-stack-2026-11-09.md), [결정0010](../docs/decisions/0010-no-billing-web-backend.md), [검사 기록](../docs/validation/WEB-02-no-billing.md)을 따른다.
 
-Node22.12 이상(서버 배포 Node22), Java21 이상이 필요하다. 의존성 설치 시 스크립트는 실행하지 않는다.
+## 로컬 실행과 검사
+
+Node22.12+를 사용한다. Firebase Auth 공식 Emulator와 Cloudflare 공식 Wrangler/workerd·D1을 localhost에만 실행한다. Miniflare는 Wrangler4.158.0이 쓰는5.20261104.0-beta와 맞췄다. 이전 안정판4의 high 취약점을 남기지 않았다. Java는 현재 Auth-only 검사에는 필요하지 않고 옛 Firestore 검사에만21+가 필요하다.
 
 ```powershell
 npm --prefix app-web ci --ignore-scripts
-npm --prefix functions ci --ignore-scripts
+npm --prefix worker ci --ignore-scripts
 npm --prefix tools/auth-emulator ci --ignore-scripts
 node app-web/node_modules/@playwright/test/cli.js install chromium
+node app-web/scripts/check.mjs
+npm --prefix app-web audit
+npm --prefix worker audit
 ```
 
-서로 다른 터미널에서 저장소 루트를 기준으로 실행한다. demo 프로젝트는 운영 계정/실제 이메일 없이 동작하며 메모리의 가상 데이터만 사용한다. `quiet.cjs`는 인증 링크가 로그에 남지 않도록 공식 CLI 출력을 끈다.
+전체 검사는 가상 이메일/기록만 사용해 단위·JWT·D1·보안·독립 Chromium2개·production 번들·Worker dry-run을 실행한다. `--reuse-emulators`는 알고 있는 WEB-02 Auth9199+Worker8787에만 사용한다. 자신이 띄운 서버는 종료하고, 가상 D1은 Git 제외 tmp/codex/WEB-02-local-*에 둔다. 실제 운영 데이터·무료 CPU 검사를 대신하지 않는다. production 확인 번들은 가상 설정이므로 배포에 재사용하지 않는다.
+
+수동 미리보기는 서로 다른 터미널에서 저장소 루트 기준으로 실행한다.
 
 ```powershell
-node -r ./tools/auth-emulator/quiet.cjs ./tools/auth-emulator/node_modules/firebase-tools/lib/bin/firebase.js emulators:start --only auth,firestore,functions --project demo-gajaham-web
+node -r ./tools/auth-emulator/quiet.cjs ./tools/auth-emulator/node_modules/firebase-tools/lib/bin/firebase.js emulators:start --only auth --project demo-gajaham-web
+node worker/node_modules/wrangler/bin/wrangler.js d1 migrations apply DB --local --config worker/wrangler.local.jsonc
+node worker/node_modules/wrangler/bin/wrangler.js dev --local --config worker/wrangler.local.jsonc
 npm --prefix app-web run dev:emulator
 ```
 
-[로컬 웹앱](http://127.0.0.1:5183/)을 연다. 가상 이메일로 가입한 뒤 다른 브라우저에서도 같은 계정으로 로그인할 수 있다. Emulator를 종료하면 가상 서버 기록은 사라진다. 이 주소는 다른 휴대전화의 실사용 주소가 아니다. 서버 없이 `npm --prefix app-web run dev`로 실행하면 게스트 보관만 가능하다.
+[로컬 웹앱](http://127.0.0.1:5183/)은 이 컴퓨터의 가상 미리보기다. local entry와 production entry를 섞지 않는다. 일반 dev 모드는 운영 설정이 없으면 게스트만 제공한다. quiet.cjs는 인증 링크의 로그 출력을 끈다. [서버 설정](../worker/README.md)을 함께 따른다.
 
-## 검사
+## 운영 전 남은 검사
 
-```powershell
-node app-web/scripts/check.mjs
-# 이미 위 demo Emulator를 실행한 경우만:
-node app-web/scripts/check.mjs --reuse-emulators
-npm --prefix app-web audit
-npm --prefix functions audit
-```
+사용자는 Google·Cloudflare 소유 계정 로그인/생성, 실제 문의처 준비, Galaxy 검사 협조가 필요하다. 카드·Blaze·도메인·서버 구매는 필요 항목이 아니다. 계정 접근 후 설정과 검사는 Codex가 지원한다. 비밀번호·키는 대화나 문서에 붙이지 않는다.
 
-검사는 단위5 + Rules1 + 서버/API3 + 브라우저8, production 번들·헤더 설정을 확인한다. v1 게스트 원본 보존, 삭제 뒤 과거 저장 재시도의 재생성 차단, 명시적으로 다시 확인한 게스트 재이동도 포함한다. `check-production.mjs`가 만든 번들은 가상 공개 설정을 쓰므로 배포용으로 재사용하지 않는다. 브라우저 검사 스크린샷과 보고서는 Git에서 제외한다. 개발 CLI의 남은 중간 위험도 의존성 경고는 운영 의존성과 구분하며 Emulator를 외부로 공개하거나 사용자 입력 패턴을 CLI에 넘기지 않는다.
+Firebase Spark/Cloud Billing 미연결과 Cloudflare **Workers Free**/유료 구독·결제수단 미연결을 실제 콘솔에서 확인한다. 로컬 preflight는 원격 청구 상태를 증명하지 않는다. 이메일·열거 보호·12자 영문/숫자 정책·정식 도메인·App Check를 설정한다. SMS·유료 API를 켜지 않는다.
 
-## 실제 운영 준비
+.env.example의 공개 웹 설정·API origin·실제 문의처를 Git 제외 .env.production.local에 넣고 `node app-web/scripts/preflight.mjs` 통과 후 실제 번들을 빌드한다. Hosting CSP의 가상 API 주소를 실제 API origin 하나로 바꾼다. preflight가 정확한 origin 일치를 검사한다. 개인정보 처리방침·국외 처리·문의·D1 자동 복구 이력 Free7일을 확정한다.
 
-Firebase Hosting 기본 `프로젝트.web.app` 주소를 사용할 수 있어 별도 도메인 구매는 필수가 아니다. 현재 운영 Google 계정/프로젝트·실제 인증·App Check·배포는 미설정이다.
+Free 운영 환경에서 JWT 검증/관리 토큰 갱신·큰 페이지·탈퇴/Cron의 CPU10ms·D1 호출50개 제한과 실제 메일·App Check·헤더·두 브라우저·Galaxy를 검증한다. 무료 CPU에 맞지 않으면 유료 업그레이드 없이 구현 축소/구성 재검토를 한다. 조건 통과 후 D1 migration·Worker·Cron·Hosting을 구체적인 대상으로 배포한다. 기본 web.app/workers.dev 주소를 쓴다.
 
-1. Firebase 프로젝트 연결과 Firestore Standard 리전 `asia-northeast3`를 확인한다. 배포 전 Functions의 Blaze 결제 연결·예산 알림·무료 할당량을 확인한다. 함수 최대2 인스턴스/최소0으로 시작하지만 월 과금 상한을 보장하지 않는다.
-2. 이메일/비밀번호 인증과 이메일 열거 보호, 비밀번호 정책(영문·숫자12자 이상), 허용 정식 도메인만 설정한다. 이메일 템플릿의 발신/확인/재설정 링크를 실제 브라우저에서 검사한다. 초기 계정당5000건/UTF-8 2MiB·수명 누적 생성요청10만개(최초 중복 포함, 재시도 제외) 제한이며 이미지 업로드는 없다. 영구 삭제의 최소 요청 UUID는 원문 없이 계정 탈퇴까지 유지해 과거 재시도에 의한 재생성을 차단한다.
-3. reCAPTCHA Enterprise 키의 허용 도메인과 App Check 등록을 확인한다. 운영 API는 App Check를 강제한다. debug 토큰/Emulator 옵션으로 이를 우회하지 않는다.
-4. `.env.example`을 Git에서 제외된 `.env.production.local`로 복사한 뒤 Firebase의 공개 웹 설정·정식 origin·실제 문의처를 입력한다. 관리자 키를 넣지 않는다. 문의처가 없으면 개발 안내만 제공하며 임의의 실제 이메일 주소를 쓰지 않는다.
-5. `node app-web/scripts/preflight.mjs`를 통과시키고 `npm --prefix app-web run build`로 실제 설정을 다시 빌드한다. 개인정보 처리방침·보존/삭제·국외 처리 안내, 비용·운영 연락처를 확인한다.
-6. 구체적인 프로젝트·예산·배포 내용을 검토한 뒤 Auth/Rules/인덱스/TTL/Functions/Hosting을 배포한다. 이 저장소에서 계정 생성·유료 활성화·배포는 실행하지 않았다. TTL은 지연 정리 대상이며7일/2일의 정확한 물리 삭제 시각을 보장하지 않는다.
-7. 운영 URL에서 두 독립 브라우저, Galaxy Samsung Internet/Chrome, 실메일·재설정·App Check·탈퇴·기존 토큰 거절·보안 헤더를 확인한다. 초기에는 사용자 파일 백업/시점 복구·영속 오프라인 계정 저장을 제공하지 않는다.
-
-현재 `account/`의 옛 Android 인증 삭제 페이지만으로 웹 서버 기록 삭제를 완료 처리하면 안 된다. 웹앱의 설정→계정 탈퇴 경로를 사용한다. 운영에서 개인 기록 삭제 실패/지연을 감시하고, 재시도가 소진되면 서버의 `deleting` 작업을 확인·재개해야 한다. 문의처/처리방침과 실제 운영 검사 전 공개 출시 완료로 표시하지 않는다.
+기본 firebase.json에는 Functions/Firestore 배포가 없다. 옛 firebase.web01.json은 Emulator용이고 Functions 배포는 중단 hook이 막는다. Worker build는 dry-run만 수행한다. 현재 실제 운영 계정·Free 플랜 확인·키·실메일·운영 CPU·Galaxy·공개 배포는 미실행이다. 기존 account/의 인증 삭제만으로 웹 서버 원본 삭제 완료를 주장하지 않는다.

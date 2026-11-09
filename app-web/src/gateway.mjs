@@ -8,7 +8,7 @@ let configuration = publicConfig; let local; let appCheck; let auth;
 if (__LOCAL_EMULATOR__) { local = await import('./local-emulator.mjs'); configuration = local.config; }
 const validOrigin = value => { try { const url = new URL(value); return url.protocol === 'https:' && url.origin === value; } catch { return false; } };
 export const canonicalOrigin = validOrigin(publicConfig.origin) ? publicConfig.origin : '';
-export const available = localMode || Boolean(configuration.apiKey && /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(configuration.projectId) && configuration.authDomain && configuration.appId && configuration.appCheckKey && canonicalOrigin && location.origin === canonicalOrigin && publicConfig.contact);
+export const available = localMode || Boolean(configuration.apiKey && /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(configuration.projectId) && configuration.authDomain && configuration.appId && configuration.appCheckKey && validOrigin(configuration.apiOrigin) && canonicalOrigin && location.origin === canonicalOrigin && publicConfig.contact);
 if (available) {
   const app = initializeApp(configuration);
   auth = initializeAuth(app, { persistence: browserLocalPersistence });
@@ -52,7 +52,7 @@ export async function deletionStatus(receipt) {
 async function send(action, payload, token, appToken) {
   const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 45000);
   try {
-    const response = await fetch(localMode ? local.endpoint : `https://asia-northeast3-${configuration.projectId}.cloudfunctions.net/personalApi`, {
+    const response = await fetch(localMode ? local.endpoint : `${configuration.apiOrigin}/personalApi`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(appToken ? { 'X-Firebase-AppCheck': appToken } : {}) },
       body: JSON.stringify({ data: { action, payload } }), signal: controller.signal, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer'
     });

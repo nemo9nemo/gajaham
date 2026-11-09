@@ -9,7 +9,7 @@ export default defineConfig(({ command, mode }) => {
     apiKey: env.GAJAHAM_API_KEY ?? '', projectId: env.GAJAHAM_PROJECT_ID ?? '',
     authDomain: env.GAJAHAM_AUTH_DOMAIN ?? '', appId: env.GAJAHAM_APP_ID ?? '',
     appCheckKey: env.GAJAHAM_APP_CHECK_KEY ?? '', origin: env.GAJAHAM_ORIGIN ?? '',
-    contact: env.GAJAHAM_CONTACT ?? ''
+    contact: env.GAJAHAM_CONTACT ?? '', apiOrigin: env.GAJAHAM_API_ORIGIN ?? ''
   };
   return {
     resolve: { alias: { '#domain': domain } },

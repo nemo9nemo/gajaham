@@ -4,7 +4,7 @@
 
 한국어로 소통한다. 가자함은 인스타그램 DM·링크로 받은 장소를 개인 맵과 두 사람의 공유 맵에 모으는 서비스다. 개발의 기준 경로는 C:\Users\love0\nemo9Dev\gajaham이다.
 
-현재 출시 방향은 **URL로 접속하는 모바일 웹앱**이며 설치는 필요하지 않다(2026-11-03 사용자 요구). PWA 홈 화면 추가는 선택이다. **로그인하면 어느 지원 기기·브라우저에서든 같은 계정의 개인 기록을 볼 수 있어야 한다.** 결정0008/0009와 docs/contracts/web-account-data.md가 최신 저장 기준이며 docs/plans/WEB-01-account-cloud-app.md가 실제 구현 기준이다. 도메인·운영 서버 보유는 가정하지 않고 최소 운영 비용을 우선한다. app-web/·functions/에 실제 웹/서버 코드를 구현하고 공식 Emulator와 독립 Chromium 컨텍스트에서 검증한다. 운영 계정·실메일·Galaxy 실기기·공개 배포는 아직 미실행이다. Android/AAB·Play·AdMob은 현 웹 출시 선행 조건에서 제외하고 기존 구현은 보존한다.
+현재 출시 방향은 **URL로 접속하는 모바일 웹앱**이며 설치는 필요하지 않다(2026-11-03 사용자 요구). PWA 홈 화면 추가는 선택이다. **로그인하면 어느 지원 기기·브라우저에서든 같은 계정의 개인 기록을 볼 수 있어야 한다.** 결정0008/0009/0010과 docs/contracts/web-account-data.md가 최신 기준이며 docs/plans/WEB-02-no-billing.md가 현재 구현 기준이다. 도메인·운영 서버 보유는 가정하지 않고 결제수단 미연결·초과 자동과금 없는 운영을 우선한다(2026-11-09). app-web/·worker/에 실제 웹/서버 코드를 구현하고 공식 Auth Emulator·workerd/D1과 독립 Chromium에서 검증한다. functions/는 이전 구현 이력과 공통 순수 도메인 모듈을 보존한다. 운영 계정·실메일·Galaxy 실기기·공개 배포는 아직 미실행이다. Android/AAB·Play·AdMob은 현 웹 출시 선행 조건에서 제외하고 기존 구현은 보존한다.
 
 구현 자산은 정적 목업·Android 개인 저장 앱·WEB-01 실제 개인 웹앱이다. `android/`는 Room v3와 선택적 이메일 로그인 SDK·계정별 로컬 영역을 구현했다. 웹의 공식 Emulator 통합·브라우저 검사를 운영 인증 활성화·실기기 검사와 구분한다. 실제 지도·상대 연결·공유 서버·DM은 아직 없다. 기획 기준은 docs의 기획 문서(docs/personal-shared-map-plan-2026-10-12.md, docs/planning-review-2026-10-12.md)와 .planning-staging의 제품 기획·로드맵·시장 조사다. 구현되지 않은 기능과 실행하지 않은 검사를 완료로 표시하지 않는다.
 
@@ -34,8 +34,10 @@
 
 2026-10-27 AUTH-02는 Firebase BoM 34.9.0/Auth 24.0.1 공식 이메일 인증, Room v3 guest/UID 영역, 명시적 게스트 기록 이동, 탈퇴 pending·세션 정지, 백업 경로 제거와 `account/` 외부 탈퇴 페이지를 구현한다. 실제 운영 설정은 아직 없으며 미설정 시 게스트만 사용 가능하다. debug 명시적 demo Emulator와 release를 분리한다. 서버 인가·상대 연결은 미구현이다. 개인 원본·공유 사본·인증 계정 정보는 별도다. 브리프·검사 증거는 docs/plans/AUTH-02-email-local-mode.md와 docs/validation/AUTH-02-email-local-mode.md를 따른다.
 
-2026-11-03 WEB-01은 app-web/의 Vite8.3.5·Firebase13.2.0, functions/의 Functions7.4.0·Admin14.5.0·배포 Node22를 사용한다. Firebase Auth Web + 서버 callable API + Firestore Standard UID별 원본 + Hosting이며 게스트만 IndexedDB다. 직접 DB 읽기/쓰기는 Rules로 전부 거절하고 API에서 최신 토큰/회수·UID·상태·스키마/한도·버전/중복을 검사한다. 운영 App Check는 강제다. 계정 기록은 메모리 캐시이고 영속 오프라인 큐는 없다. 서버 커밋 후 완료를 표시한다. 최근 재인증→지속되는 deleting→원본/출처/인증 삭제→완료의 재시도 가능한 서버 트리거를 사용한다. 임의256bit 삭제 영수증은 상태만 조회하며 sessionStorage에 확인 정보만 둔다. 완료 상태7일·호출 제한2일 후 TTL 정리 대상이다. 리전asia-northeast3·최대2/최소0 인스턴스이며 Blaze/예산·App Check·리전·실제 문의처·운영 배포는 아직 미설정이다. 사용자는 문의처를 추후 교체할 예정이므로 개발에는 준비 중으로 표시하며 실제 타인 이메일을 쓰지 않는다. 기존 account/의 인증 삭제 페이지만으로 서버 원본 삭제 완료를 주장하지 않는다.
+2026-11-03 WEB-01(서버/비용은 결정0010으로 대체)은 app-web/의 Vite8.3.5·Firebase13.2.0, functions/의 Functions7.4.0·Admin14.5.0·배포 Node22를 사용한다. Firebase Auth Web + 서버 callable API + Firestore Standard UID별 원본 + Hosting이며 게스트만 IndexedDB다. 직접 DB 읽기/쓰기는 Rules로 전부 거절하고 API에서 최신 토큰/회수·UID·상태·스키마/한도·버전/중복을 검사한다. 운영 App Check는 강제다. 계정 기록은 메모리 캐시이고 영속 오프라인 큐는 없다. 서버 커밋 후 완료를 표시한다. 최근 재인증→지속되는 deleting→원본/출처/인증 삭제→완료의 재시도 가능한 서버 트리거를 사용한다. 임의256bit 삭제 영수증은 상태만 조회하며 sessionStorage에 확인 정보만 둔다. 완료 상태7일·호출 제한2일 후 TTL 정리 대상이다. 리전asia-northeast3·최대2/최소0 인스턴스이며 Blaze/예산·App Check·리전·실제 문의처·운영 배포는 아직 미설정이다. 사용자는 문의처를 추후 교체할 예정이므로 개발에는 준비 중으로 표시하며 실제 타인 이메일을 쓰지 않는다. 기존 account/의 인증 삭제 페이지만으로 서버 원본 삭제 완료를 주장하지 않는다.
 
+
+2026-11-09 WEB-02는 Firebase Auth/Hosting Spark + Cloudflare Workers/D1 Free다. Blaze·Cloud Billing·결제수단·초과 자동과금·도메인 구매를 연결하지 않는다. worker/의 Wrangler4.158.0·Miniflare5.20261104.0-beta·jose6.2.16, compatibility_date2026-08-01을 사용한다. D1 atomic batch 안의 임의 버전 검사·쓰기와 UID별 서버 원본·최신 Auth/App Check 검증을 적용한다. 삭제 pending은 API 후속 작업과5분 Cron이 재시도하며 완료7일/호출 제한2일 뒤 제한된 Cron 정리 대상이다. Free 한도에서는 기능 실패/지연이 가능하며 운영 CPU10ms·DB500MB/계정전체5GB·실제 Free/결제 미연결·실메일·Galaxy·배포는 미검증이다. D1 자동 복구 이력 Free7일과 현재 DB 삭제를 구분한다. 기본 firebase.json은 유료 Functions/Firestore를 배포하지 않으며 firebase.web01.json은 이전 Emulator용으로 Functions 배포를 차단한다. 운영 키는 Worker secret에만 둔다. 실제 문의처 준비 전 개발에는 준비 중으로 표시한다.
 ## 산출물과 검증
 
 WEB-01 영구 삭제/휴지통 만료는 원문·출처와 함께 트랜잭션에서 최소 `removedRequests/{생성요청UUID}`와 중복 요청의 대상UUID만 남겨 다른 기기의 오래된 create 재시도로 기록을 되살리지 못하게 한다. 원문/내용지문 없이 계정 탈퇴까지 유지하고 worker가 함께 정리한다. 계정당 수명 누적 생성요청10만개 한도로 이 메타 비용도 제한한다(최초 중복 처리 포함, 이미 처리된 요청 재시도 제외). 게스트 IndexedDB는 v2이며 v1 원본을 보존하고 같은 최소 ID를 사이트 데이터 삭제 때까지 유지한다.
@@ -50,13 +52,13 @@ Android는 JDK 17·Gradle Wrapper 8.13·SDK/target 36·minSdk 29를 사용한다
 
 웹 계정 서버 원본의 현재 요구/계약·시나리오는 결정0008·docs/plans/AUTH-03-account-cloud-policy.md·docs/validation/AUTH-03-account-cloud-policy.md를 우선한다. WEB-00의 이전 로컬 전용 시나리오는 이력이다. 위 목업/아래 Android 검사를 실제 웹앱·서버 원본·두 기기 조회·공유·운영 배포의 통과 증거로 재사용하지 않는다.
 
-실제 웹 검사는 app-web/README.md·docs/validation/WEB-01-account-cloud-app.md를 따른다. 의존성은 app-web/·functions/에만 추가하고 web/의 패키지 금지는 유지한다. Java21+·Node22.12+가 필요하다.
+현재 웹 검사는 app-web/README.md·worker/README.md·docs/validation/WEB-02-no-billing.md를 따른다. 의존성은 app-web/·worker/에 추가하며 functions/ 이력과 web/ 패키지 금지는 유지한다. Node22.12+가 필요하고 Java21+는 이전 Firestore 검사에만 필요하다.
 
 - 통합: `node app-web/scripts/check.mjs` (기존 demo suite만 명시적으로 `--reuse-emulators`)
-- 의존성: `npm --prefix app-web ci --ignore-scripts`, `npm --prefix functions ci --ignore-scripts`, `npm --prefix tools/auth-emulator ci --ignore-scripts`
+- 의존성: `npm --prefix app-web ci --ignore-scripts`, `npm --prefix worker ci --ignore-scripts`, `npm --prefix tools/auth-emulator ci --ignore-scripts`
 - 웹: `npm --prefix app-web run dev:emulator` → http://127.0.0.1:5183/ (Emulator 서버 별도). 가상 이메일/데이터만 쓰며 운영 실사용 주소가 아니다.
-- 취약점: `npm --prefix app-web audit`, `npm --prefix functions audit`. production 확인 번들은 가상 설정이므로 운영 빌드를 별도로 한다.
-- 운영 전: `node app-web/scripts/preflight.mjs`·실제 프로젝트/Blaze·예산·메일/비밀번호/열거 보호·App Check·Rules/TTL·실메일/Galaxy/두 브라우저 검증. 실행 증거 전 배포 완료로 표시하지 않는다.
+- 취약점: `npm --prefix app-web audit`, `npm --prefix worker audit`. production 확인 번들은 가상 설정이므로 운영 빌드를 별도로 한다.
+- 운영 전: `node app-web/scripts/preflight.mjs`·실제 Spark/Workers·D1 Free·결제 미연결·메일/비밀번호/열거 보호·App Check·D1/Cron·CPU·실메일/Galaxy/두 브라우저 검증. 실행 증거 전 배포 완료로 표시하지 않는다.
 
 - Android 검사·빌드: `./android/scripts/check.ps1` 또는 `android/gradlew.bat -p android :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease --no-daemon`
 - JVM 도메인 검사와 Robolectric Android 로컬 검사를 실기기·에뮬레이터 검사와 구분한다. 실제 지도·공유 앱·파일 제공자·One UI 검사는 기기별 증거가 있어야 완료다.
