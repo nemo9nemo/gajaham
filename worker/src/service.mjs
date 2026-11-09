@@ -161,4 +161,3 @@ export function createService({ db, auth, now = Date.now }) {
   }
   return { handle, finishDeletion, deletionStatus };
 }
-
