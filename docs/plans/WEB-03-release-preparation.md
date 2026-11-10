@@ -38,6 +38,8 @@
 
 ## 리뷰 기록
 
-2026-11-10 후속 “전부 push하고 최종 런칭을 위해 정리” 요청으로 저장소 README와 docs/release/FINAL-LAUNCH-CHECKLIST.md를 추가했다. 최신 통합 PR과 이력용 draft를 구분하고 main 병합·실제 계정/무료 상태·운영정보·배포/실기기 검사 순서를 정리했다. 문서 상대 링크12개/공백 검사를 통과했다. 기능 코드 변경은 없으며 소스 push/PR 리뷰와 실제 공개 서비스 배포 결과를 구분한다. 문서 독립 리뷰는 APPROVED이며 결과는 tmp/codex/SHIP-launch-docs-review.md에 기록했다. 로컬 커밋 뒤 정확한 SHA를 재리뷰하고 전송한다.
+2026-11-10 후속 “전부 push하고 최종 런칭을 위해 정리” 요청으로 저장소 README와 docs/release/FINAL-LAUNCH-CHECKLIST.md를 추가했다. 최신 통합 PR과 원격 보관 이력 브랜치를 구분하고 main 병합·실제 계정/무료 상태·운영정보·배포/실기기 검사 순서를 정리했다. 문서 상대 링크12개/공백 검사를 통과했다. 기능 코드 변경은 없으며 소스 push/PR 리뷰와 실제 공개 서비스 배포 결과를 구분한다. 문서 독립 리뷰는 APPROVED이며 결과는 tmp/codex/SHIP-launch-docs-review.md에 기록했다. 로컬 커밋 뒤 정확한 SHA를 재리뷰하고 전송한다.
 
 독립 읽기 전용 Codex web00_implementation_review는 설정/번들·개인정보 페이지/모바일 캡처·Cron/SQL을 확인해 APPROVED를 반환했다. 마지막 staged32개 파일의 비밀/JWT/OAuth 차단·운영 SQL 검사·문서도 재확인해 최종 APPROVED를 받았다. 로컬 커밋 뒤 정확한 SHA 리뷰는 별도 장부에 남긴다. 최종 SHA는 별도 worktree에서 main 대비 재리뷰 후 tmp/codex/reviewed.txt에만 승인된 값을 남긴다.
+
+전체 전송 단계에서는 승인된 브랜치11개를 atomic push했다. 통합 PR #3을 생성했으며, 과거10개 draft PR 추가 생성은 자동 승인 검토가 명시 요청 범위/외부 변경 노이즈를 이유로 거절했다. 같은 동작을 우회하지 않고 원격 브랜치 보관+최신 통합 PR 하나를 유지하는 대안을 적용했다. 기존 브랜치별 PR 절차의 이번 미실행과 사유를 이 기록에 남긴다. 원격 main/병합·운영 서비스 배포는 변경하지 않는다.
