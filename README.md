@@ -15,6 +15,8 @@
 
 ## 최종 런칭 준비
 
+지금 사용자에게 필요한 확인은 [다음 단계 안내](docs/release/USER-NEXT-STEPS.md)를 따릅니다. 원격 자동검사는 [Web checks](https://github.com/nemo9nemo/gajaham/actions/workflows/web-checks.yml)에서 실제 결과를 확인합니다. 공개 저장소의 무료 표준 실행기·가상 데이터만 사용하며 배포/운영 계정에는 연결하지 않습니다.
+
 **공개 서비스는 아직 배포하지 않았습니다.** 실제 소유 계정/무료 요금제·결제 미연결 확인, 공개 운영정보·문의처, 실메일·Galaxy 검사가 남아 있습니다. 가상 fixture/Emulator 주소를 실사용 주소로 사용하지 않습니다.
 
 1. [최종 런칭 체크리스트](docs/release/FINAL-LAUNCH-CHECKLIST.md): 병합·계정 확인부터 실제 배포/검증까지의 순서와 담당

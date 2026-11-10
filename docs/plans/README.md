@@ -4,6 +4,8 @@ Codex가 기획·구현·검증·독립 리뷰를 진행하는 작업 단위 브
 
 ## 현재 출시 방향: 웹앱
 
+사용자의 현재 확인 항목은 [지금/나중 안내](../release/USER-NEXT-STEPS.md), 소스 원격 자동검사·출시 파일 무결성은 [WEB-04](WEB-04-launch-verification.md)를 따른다. 기존 통합 PR #3을 갱신하며 실제 서비스 공개/운영 계정 검사는 별도다.
+
 2026-11-10 사용자 확인 전 가능한 출시 준비는 [WEB-03](WEB-03-release-preparation.md)과 [최신 상태표](../release/WEB-03-readiness.md)를 따른다. 운영 정보/계정 없이 마친 일과 계정 연결 후 Codex가 이어서 할 일을 구분한다.
 
 2026-11-09 사용자 요구로 **결제수단·Blaze·초과 자동과금 없는 구성**으로 변경했다. 현재 기준은 [WEB-02](WEB-02-no-billing.md), [결정0010](../decisions/0010-no-billing-web-backend.md), [실제 사용 조사와 출시 잔여 표](../research/no-billing-stack-2026-11-09.md)다. Firebase Auth/Hosting Spark + Cloudflare Workers/D1 Free를 사용하며 무료 초과 시 실패/제한을 허용한다. 아래 WEB-01의 Blaze/예산/Functions 설명은 이력이다.

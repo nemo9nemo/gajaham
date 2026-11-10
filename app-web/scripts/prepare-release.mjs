@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { deploymentConfigs, toEnv, validateRelease, containsPrivateKeyMaterial } from './release-config.mjs';
+import { verifyRelease } from './verify-release.mjs';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 function run(args, cwd, env = {}) {
   const result = spawnSync(process.execPath, args, { cwd, env: { ...process.env, WRANGLER_SEND_METRICS: 'false', WRANGLER_LOG_PATH: join(root, 'tmp/tool-logs/wrangler-release.log'), ...env }, stdio: 'pipe', encoding: 'utf8' });
@@ -54,9 +55,10 @@ export async function prepare(inputPath) {
   // Everything outside manifest is local build material and must not be uploaded.
   await writeFile(join(output, 'manifest.json'), JSON.stringify({ status: 'BUILT_NOT_DEPLOYED', billingVerified: false, operatingChecksPassed: false, files: manifest }, null, 2) + '\n');
   await writeFile(join(output, 'NOT-DEPLOYED.txt'), '로컬 생성만 완료. manifest.json의 파일만 배포 검토 대상입니다. 실제 Spark/Workers Free·결제 미연결·secret·CPU/App Check/메일/실기기 검사 전 배포하지 마세요. 빌드 자료 전체를 웹 루트로 업로드하지 마세요.\n');
+  await verifyRelease(output);
   return relative(root, output).replaceAll('\\', '/');
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try { const destination = await prepare(process.argv[2] ?? 'release.config.local.json'); console.log(`출시 번들 생성 완료: ${destination}\n공개 배포·원격 리소스 생성·결제 변경은 하지 않았습니다.`); }
+  try { const destination = await prepare(process.argv[2] ?? 'release.config.local.json'); const checked = await verifyRelease(destination); console.log(`출시 번들 생성 완료: ${destination}\nmanifest SHA256: ${checked.manifestSha256}\n공개 배포·원격 리소스 생성·결제 변경은 하지 않았습니다.`); }
   catch (error) { console.error(error.message); process.exitCode = 1; }
 }

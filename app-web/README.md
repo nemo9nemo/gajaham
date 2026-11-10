@@ -2,6 +2,8 @@
 
 2026-11-10 현재 출시 준비는 [WEB-03 상태표](../docs/release/WEB-03-readiness.md)·[운영 절차](../docs/release/WEB-03-operator-runbook.md)·[검사 증거](../docs/validation/WEB-03-release-preparation.md)를 따른다. /privacy/는 무로그인 안내 URL이다. 공개 설정을 release.config.local.json에 한 번 입력한 뒤 `node app-web/scripts/prepare-release.mjs release.config.local.json`으로 미배포 번들을 생성한다. 실제 설정/운영자·문의처·시행일·국외 처리 안내 확인이 없으면 생성하지 않는다. 가상 fixture 산출물은 배포하지 않는다.
 
+WEB-04는 생성 직후 출시 파일을 자동 대조하고 `node app-web/scripts/verify-release.mjs <생성폴더> <보관한manifestSHA256>`으로 다시 검사한다. [사용자 확인 안내](../docs/release/USER-NEXT-STEPS.md)에서 지금 할 일과 연결 뒤 할 일을 나눈다. GitHub [Web checks](https://github.com/nemo9nemo/gajaham/actions/workflows/web-checks.yml)는 가상 검사만 하며 서비스 배포를 하지 않는다.
+
 설치 없이 URL로 여는 개인 장소 보관함이다. 이메일 가입/로그인, 게스트 보관, 명시적 계정 이동, 링크·장소·메모·방문·휴지통, 서버 개인 원본과 계정 삭제를 구현한다. 지도 SDK·자동 분석·상대 연결·공유·DM·광고는 아직 없다.
 
 현재 비용 정책은 **Firebase Auth/Hosting Spark + Cloudflare Workers/D1 Free, 결제수단 미연결**이다. 한도 도달 시 사용이 제한될 수 있으며 자동 유료 전환하지 않는다. Functions/Firestore는 이력이다. [조사·출시까지 남은 항목](../docs/research/no-billing-stack-2026-11-09.md), [결정0010](../docs/decisions/0010-no-billing-web-backend.md), [검사 기록](../docs/validation/WEB-02-no-billing.md)을 따른다.

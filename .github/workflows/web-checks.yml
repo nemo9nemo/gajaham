@@ -1,0 +1,49 @@
+name: Web checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, codex/WEB-03-release-preparation]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-checks-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    # Public repositories + standard runners are free. Skip private/internal repos.
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      FIREBASE_CLI_DISABLE_USAGE_REPORTING: 'true'
+      WRANGLER_SEND_METRICS: 'false'
+      WRANGLER_LOG_PATH: ${{ github.workspace }}/tmp/tool-logs/wrangler-ci.log
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install pinned dependencies without lifecycle scripts
+        run: |
+          npm --prefix app-web ci --ignore-scripts --no-audit --no-fund
+          npm --prefix worker ci --ignore-scripts --no-audit --no-fund
+          npm --prefix tools/auth-emulator ci --ignore-scripts --no-audit --no-fund
+      - name: Install Chromium
+        run: node app-web/node_modules/@playwright/test/cli.js install --with-deps chromium
+      - name: Check web, API, D1 and release integrity with synthetic data
+        run: node app-web/scripts/check.mjs
+      - name: Audit web and server dependencies
+        run: |
+          npm --prefix app-web audit --audit-level=low
+          npm --prefix worker audit --audit-level=low
+      - name: Reject high severity findings in the isolated emulator CLI
+        run: npm --prefix tools/auth-emulator audit --audit-level=high

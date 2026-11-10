@@ -16,6 +16,8 @@
 
 ## 공개 설정을 한 번 입력
 
+이 절의 파일 입력과 명령은 Codex가 처리합니다. 사용자는 운영에 쓸 계정과 공개 운영자/문의처를 정하고 실제 처리 안내를 확인합니다. 계정 권한을 사용할 수 있게 된 뒤 Codex가 공개 설정과 제공자/국외 처리 문안을 준비하며 비밀을 채팅으로 받지 않습니다.
+
 release.config.example.json을 Git 제외 release.config.local.json으로 복사한다. 이 파일에는 **공개 설정만** 입력한다. 비밀번호·서비스 계정 JSON·private key·OAuth/CLI 토큰·App Check debug token을 넣지 않는다.
 
 Firebase의 공개 웹 설정(apiKey/projectId/authDomain/appId/appCheckKey), 프로젝트 번호(projectNumber), 기본 웹 주소(origin), 기본 Worker 주소(apiOrigin/workerName), D1 연결 정보(databaseName/databaseId), 공개 운영 정보(contact/operatorName/policyDate/processingNotice)를 사용한다. processingNotice에는 확정한 제공자별 처리 국가/수탁 업무·국외 이전 근거/시점/방법·보존/거부 방법을 실제 흐름에 맞춰 작성한다. privacyReviewed는 해당 안내를 운영자가 확인한 뒤에만 true로 바꾼다. 형식 검사는 법적 적정성·실제 플랜·계정 소유권 확인을 대신하지 않는다.
@@ -33,6 +35,14 @@ node app-web/scripts/prepare-release.mjs release.config.local.json
 - manifest.json: 배포 검토 파일별 SHA256, BUILT_NOT_DEPLOYED·billingVerified=false·operatingChecksPassed=false.
 
 원본 파일을 바꾼 뒤에는 새 번들을 생성하고 검증한다. manifest의 hash와 파일이 다르면 사용하지 않는다. bundle 루트 전체를 정적 웹 루트로 업로드하지 않는다. Firebase public은 hosting/이며 Worker secret은 산출물에 없다. 직접 수동 빌드를 할 때는 기존 .env.example·preflight를 따르고 CSP의 API origin 하나를 일치시킨다.
+
+생성 시 출력된 manifest SHA256을 별도로 보관하고 다음과 같이 대조한다. 생성 직후에도 같은 검사를 자동 실행한다.
+
+```powershell
+node app-web/scripts/verify-release.mjs tmp/release/생성폴더 보관한64자리manifestSHA256
+```
+
+이 검사는 파일 hash·누락/추가·중복·경로 탈출/symlink·민감/개발 파일·Hosting/Worker 프로젝트 구성을 확인한다. manifest와 파일을 함께 바꿀 수 있는 공격자에 대한 출처 인증은 아니며, 원래 보관한 hash 대조와 신뢰하는 코드 검토가 필요하다. 통과해도 무료 플랜/운영 CPU/개인정보 확정·공개 배포 승인 상태는 바뀌지 않는다.
 
 ## 원격 설정/배포 순서 · 미실행
 
