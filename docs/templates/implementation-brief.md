@@ -1,12 +1,12 @@
 # 구현 브리프 양식
 
-이 파일은 작성 양식이며 실행 증거가 아니다. 작업 때 `docs/plans/<작업ID>-<slug>.md`로 복사해 작성한다. 작성 규칙은 [Claude·Codex 분업](../development/claude-codex-workflow.md)을 따른다.
+이 파일은 작성 양식이며 실행 증거가 아니다. 작업 때 `docs/plans/<작업ID>-<slug>.md`로 복사해 작성한다. 작성 규칙은 [Codex 작업·리뷰](../development/codex-workflow.md)를 따른다.
 
 ```markdown
 # <작업 ID> <제목>
 
 - 상태: DRAFT | APPROVED | IN_REVIEW | DONE
-- 작성: Claude / 날짜:
+- 작성: Codex / 날짜:
 - 구현 브랜치: codex/<작업ID>-<slug>
 - 참조: 기획 문서 절 / 정책 / API / 진행표 행
 
@@ -48,5 +48,5 @@
 
 ## 리뷰 기록
 
-(Claude가 작성) 라운드별 판정 APPROVED | WARNING | BLOCKED와 지적 항목.
+(별도 Codex 리뷰 결과를 근거로 작성) 라운드별 판정 APPROVED | WARNING | BLOCKED, 리뷰 대상·결과 파일, 직접 확인한 지적과 검사, 남은 제한. 커밋 SHA 기준 최종 리뷰는 tmp/codex의 결과·장부에 기록한다.
 ```

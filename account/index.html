@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://identitytoolkit.googleapis.com http://127.0.0.1:9099; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <title>가자함 계정 삭제</title><link rel="stylesheet" href="style.css">
+</head>
+<body><main>
+  <p class="brand">가자함</p><h1>계정 삭제</h1>
+  <p>앱을 설치하지 않아도 이메일과 비밀번호를 확인한 뒤 인증 계정을 삭제할 수 있어요. 삭제한 계정은 복구할 수 없어요.</p>
+  <p>개인 장소·출처·메모·휴지통은 로그인 여부와 관계없이 기기에만 저장해요. 이 웹 페이지는 기기 안의 기록을 읽거나 지울 수 없어요. 앱의 ‘계정 탈퇴’로 현재 계정 기록을 지우거나, 앱 데이터 초기화·앱 삭제로 기기의 모든 개인 기록을 지워 주세요. 앱 삭제 후에는 다시 로그인해도 기록을 복구하지 않아요.</p>
+  <p>현재 상대 연결·공유 맵은 제공하지 않아요. 카카오·구글 로그인은 2차 개발 예정이에요.</p>
+  <p id="availability" role="status"></p>
+  <form id="delete-form">
+    <label for="email">이메일</label><input id="email" name="email" type="email" autocomplete="username" maxlength="254" required>
+    <label for="password">비밀번호</label><input id="password" name="password" type="password" autocomplete="current-password" maxlength="128" required>
+    <label class="consent"><input id="confirm" type="checkbox" required>계정을 영구 삭제하며 복구할 수 없음을 확인했어요.</label>
+    <button id="submit" type="submit" disabled>계정 영구 삭제</button>
+  </form>
+  <p id="result" role="status" aria-live="polite"></p>
+  <p class="small">비밀번호와 인증 토큰을 브라우저 저장소·URL·로그에 보관하지 않아요. 통신 중 화면을 닫으면 완료 여부를 확인할 수 없으니 결과를 기다려 주세요.</p>
+</main><script type="module" src="delete-account.mjs"></script></body></html>

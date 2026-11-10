@@ -1,0 +1,11 @@
+{
+  "name": "gajaham-personal-api",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": { "enabled": false },
+  "d1_databases": [{ "binding": "DB", "database_name": "gajaham-personal", "database_id": "00000000-0000-4000-8000-000000000000", "migrations_dir": "migrations" }],
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "vars": { "FIREBASE_PROJECT_ID": "configure-before-use", "FIREBASE_PROJECT_NUMBER": "0", "FIREBASE_APP_ID": "configure-before-use", "WEB_ORIGIN": "https://configure-before-use.web.app" }
+}

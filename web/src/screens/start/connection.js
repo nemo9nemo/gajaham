@@ -73,7 +73,7 @@ export function connectedScreen(state) {
     '<section class="card">' + mapBadge('personal') + '<h2>내 개인 맵</h2><p>그대로 유지 · 나만 볼 수 있어요</p></section>' +
     '<section class="card">' + mapBadge('shared') + html`<h2>${shared.name}</h2><p>새로 생김 · ${shared.memberIds.map((id) => userName(state, id)).join(', ')}</p></section>` +
     '<p class="muted">이제 내 개인 장소 중 공유 맵에 넣을 장소를 골라요. 상대방은 내 선택을 기다리지 않고 바로 쓸 수 있어요.</p>' +
-    html`<p class="caption">DM 기본 저장 위치는 그대로 ‘${target}’이에요.</p>`, button('공유 맵에 넣을 장소 고르기', { href: '#/todo/UI-02/2-1' }) +
+    html`<p class="caption">DM 기본 저장 위치는 그대로 ‘${target}’이에요.</p>`, button('공유 맵에 넣을 장소 고르기', { href: '#/copy/initial' }) +
     button('나중에 할게요', { action: 'show-shared', href: '#/map', variant: 'text' }));
 }
 
@@ -85,5 +85,5 @@ export function alreadySharedScreen(state) {
       html`<h2>${shared.name}</h2><p>${userName(state, partnerId)}와 함께 쓰는 중</p></section>` : '') +
     '<p class="muted">공유 맵은 한 번에 하나만 쓸 수 있어요. 새 코드로 자동으로 바꾸지 않아요. 새 사람과 연결하려면 먼저 지금 공유 맵에서 나가야 해요.</p>',
     (shared ? button('지금 공유 맵 보기', { action: 'show-shared', href: '#/map' }) : button('지도로 돌아가기', { href: '#/map' })) +
-    button('공유 맵 나가기 안내', { href: '#/todo/UI-04/8-5', variant: 'secondary' }));
+    button('공유 맵 나가기 안내', { href: '#/settings/leave', variant: 'secondary' }));
 }

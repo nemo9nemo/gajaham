@@ -1,0 +1,7 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // WEB-01 uses a verified callable API. No client has direct DB privileges.
+    match /{document=**} { allow read, write: if false; }
+  }
+}

@@ -1,11 +1,7 @@
 @AGENTS.md
 
-# Claude Code 역할
+# 이전 도구 설정 안내
 
-이 프로젝트에서 Claude Code는 기획·설계와 구현 리뷰를 맡고, 구현은 Codex가 맡는다. 절차는 docs/development/claude-codex-workflow.md를 따른다.
+2026-10-19 사용자 요청으로 이 프로젝트는 Claude Code를 사용하지 않는다. 기획·설계·구현·검증·리뷰·로컬 커밋은 Codex가 [현재 절차](docs/development/codex-workflow.md)에 따라 수행한다.
 
-- 기능 요청을 받으면 바로 구현하지 않고 `/plan-brief`로 docs/plans에 구현 브리프를 작성해 사용자 승인을 받는다.
-- 승인된 브리프는 `/codex-implement`로 Codex에 넘기고, 결과는 `/review-impl`로 브리프와 AGENTS.md 기준으로 리뷰한다.
-- 2파일·30줄 이하이고 새 로직이 없는 수정(문구·링크·오타)은 직접 처리할 수 있다. 이때는 `/codex:review`로 교차 리뷰를 받는다.
-- 커밋 메시지와 PR 본문에 `Co-Authored-By: Claude`, `Generated with Claude Code` 같은 Claude 서명 줄을 넣지 않는다(사용자 2026-10-15 요청).
-- 리뷰에서 Codex 보고를 그대로 믿지 않는다. 검증 명령 결과는 직접 다시 실행하거나 출력 근거를 확인한다.
+이 파일과 `.claude/skills/`는 이전 도구 설정이다. 과거 스킬의 Claude 담당 지시나 승인 절차를 실행하지 않는다. 과거 작성자·리뷰 기록은 보존하되, 현재 작업의 조건은 [AGENTS.md](AGENTS.md)를 따른다.

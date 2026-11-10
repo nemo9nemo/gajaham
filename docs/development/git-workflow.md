@@ -1,6 +1,6 @@
 # 브랜치·커밋·PR 절차
 
-기준일: 2026-10-15 / 출처: 사용자 요청
+기준일: 2026-10-15 / 담당 변경: 2026-10-19 사용자 요청(Codex 단독 작업)
 
 원격은 [nemo9nemo/gajaham](https://github.com/nemo9nemo/gajaham)(공개), 기본 브랜치는 `main`이다. `main`에 직접 커밋하지 않고 작업 브랜치에서 커밋한 뒤 PR로 합친다. 첫 커밋만 저장소 기준점으로 `main`에 있다.
 
@@ -8,14 +8,14 @@
 
 | 단계 | 담당 | 실행 |
 | --- | --- | --- |
-| 1. 작업 브랜치 생성 | Claude | 최신 `main`에서 작업 단위 브랜치 |
-| 2. 작업·커밋 | Codex 또는 Claude | 브리프 작업은 `/codex-implement` → `/review-impl` 후 커밋 |
-| 3. push 전 코드 리뷰 | Codex | `/codex-review` (`codex exec review --base main`) |
-| 4. push·PR 등록 | Claude | 사용자 요청 시 `/ship`으로 모아서 |
-| 5. PR 코드 리뷰 | Codex | `/ship`이 PR마다 `codex exec review` 실행 후 PR 코멘트 |
+| 1. 작업 브랜치 생성 | Codex | 최신 `main`에서 작업 단위 브랜치 |
+| 2. 작업·커밋 | Codex | 구현·검증·별도 Codex 구현 리뷰 APPROVED 후 로컬 커밋 |
+| 3. push 전 코드 리뷰 | 별도 Codex 세션 | 고정한 커밋 SHA의 worktree에서 `codex exec review --base main` |
+| 4. push·PR 등록 | Codex | 사용자 요청 시 리뷰 통과 SHA만 모아서 전달 |
+| 5. PR 코드 리뷰 | 별도 Codex 세션 | PR마다 push한 SHA를 리뷰한 뒤 타당한 지적을 PR 코멘트로 기록 |
 | 6. 병합 | 사용자 | 리뷰 확인 후 |
 
-3·5단계의 지적은 Claude가 실제 코드로 타당성을 확인한 뒤 같은 브랜치에서 수정·커밋한다. 수정분은 다음 `/ship` 때 push된다.
+3·5단계의 지적은 작업을 맡은 Codex가 실제 코드로 타당성을 확인한 뒤 같은 브랜치에서 수정·검증·커밋하고 새 SHA를 재리뷰한다. 수정분은 사용자의 다음 push 요청 때 전달한다. 구현·검사·리뷰의 구분은 [Codex 작업 절차](codex-workflow.md)를 따른다.
 
 ## 브랜치
 
@@ -23,8 +23,9 @@
 
 | 작업 | 브랜치 이름 |
 | --- | --- |
-| Codex 구현(브리프) | `codex/<작업ID>-<slug>` |
-| Claude 직접 수정·문서·설정 | `claude/<slug>` |
+| 구현·문서·설정 | `codex/<작업ID>-<slug>` |
+
+과거 `claude/*` 브랜치는 이력으로 유지하며 새 작업에 사용하지 않는다.
 
 ## 커밋
 
@@ -39,16 +40,16 @@
 참조: 브리프·기획 문서 절
 ```
 
-type은 feat·fix·chore·docs·test·refactor 중 하나다. 커밋 메시지와 PR 본문에 `Co-Authored-By: Claude`, `Generated with Claude Code` 같은 서명 줄을 넣지 않는다(`.claude/settings.json`의 `attribution`을 빈 값으로 둠).
+type은 feat·fix·chore·docs·test·refactor 중 하나다. 커밋 메시지와 PR 본문에 도구 서명 줄을 넣지 않는다.
 
 ## 푸시와 PR
 
-커밋은 로컬에만 쌓고, push는 사용자가 요청할 때 `/ship`으로 모아서 한다.
+커밋은 로컬에만 쌓고, push는 사용자가 요청할 때 모아서 한다. 로컬 커밋 완료 요청을 원격 전달 요청으로 확대하지 않는다.
 
 1. `git fetch origin`으로 원격 `main`을 확인한다. 원격에 다른 변경이 있으면 내용을 보고 브랜치를 최신 `main` 위로 맞춘다. 강제 push로 덮어쓰지 않는다.
-2. push 대기 작업 브랜치를 `git push -u origin <브랜치>`로 올린다.
-3. 브랜치마다 `main` 대상 PR을 `gh pr create`로 만든다. 본문에 작업·이유·검증·참조, 브리프 링크, push 전 Codex 리뷰 요약을 적는다.
-4. PR마다 Codex 리뷰를 실행해 타당한 지적을 PR 코멘트로 남긴다.
+2. `tmp/codex/reviewed.txt`의 `<브랜치> <SHA>`를 확인해 현재 HEAD와 같은 리뷰 통과 SHA만 `git push origin <SHA>:refs/heads/<브랜치>`로 올린다. 원격과 같은 SHA이면 push를 건너뛰고 남은 PR·리뷰 절차를 이어 간다. 아직 리뷰하지 않은 커밋은 전달하지 않는다.
+3. 브랜치마다 열린 `main` 대상 PR을 확인해 갱신하고, 없을 때만 `gh pr create`로 만든다. 본문에 작업·이유·검증·참조, 브리프 링크, push 전 Codex 리뷰 요약을 적는다. 본문·코멘트는 임시 파일을 만들어 `--body-file`로 전달한다.
+4. PR마다 push한 정확한 SHA를 별도 worktree에서 Codex로 리뷰해 타당한 지적을 PR 코멘트로 남긴다. 성공한 건은 `tmp/codex/pr-reviewed.txt`에 `<브랜치> <SHA> <PR번호>`로 기록하며 미완료된 단계는 다음 요청에 다시 처리한다.
 5. PR 주소와 리뷰 결과를 사용자에게 보여준다. 병합은 사용자가 확인한 뒤 한다.
 
 원격 저장소가 비어 있는 첫 push에서는 기준점인 `main`을 먼저 올린 뒤(`git push -u origin main`) 작업 브랜치와 PR을 올린다.

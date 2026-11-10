@@ -1,0 +1,7 @@
+# Copy to auth.local.properties (ignored). Public client configuration only, no admin credentials.
+gajaham.auth.apiKey=EXAMPLE_PUBLIC_CLIENT_KEY
+gajaham.auth.appId=1:000000000000:android:EXAMPLE_APP_ID
+gajaham.auth.projectId=example-project
+# Debug-only opt-in. Release always forces emulator=false.
+gajaham.auth.emulator=false
+gajaham.auth.emulatorHost=10.0.2.2

@@ -2,13 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
 import { once } from 'node:events';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { CATALOG, catalogState } from '../src/screens/catalog.js';
 import { parseRoute, renderRoute } from '../src/router.js';
 import { SCENARIOS, createScenario } from '../src/data/scenarios.js';
 import { createStore, reduceAction } from '../src/store.js';
 import { CODE_STATUS, UNUSABLE_CODE_MESSAGE, cancelCode } from '../src/logic/code.js';
 import { createStaticServer } from '../scripts/serve.mjs';
+import { buildCopyDraft, executeCopy } from '../src/logic/copy.js';
+import { trashPlace } from '../src/logic/place-edit.js';
 
 const EXPECTED = {
   '1-1': ['가자함', '첫 링크 저장하기', '로그인', 'DM으로 전달하거나 링크 입력', '게시물·릴스를 서비스 계정에 DM으로 보내거나 링크를 붙여 넣으면, 확인할 수 있는 내용에서 장소와 게시물 내용을 정리해 내 맵에 보관해요.'],
@@ -20,6 +22,13 @@ const EXPECTED = {
   '1-7': ['연결 코드', '사용자 A', '이 사람과 공유 맵을 만들까요?', '연결하기'],
   '1-8': ['연결됐어요', '그대로 유지', '새로 생김', 'DM 기본 저장 위치는 그대로 ‘개인 맵’이에요.'],
   '1-9': ['이미 공유 맵에 참여 중', '이미 함께 쓰는 공유 맵이 있어요', '지금 공유 맵 보기'],
+  '2-1': ['지금 복제 안 함', '선택한 장소 복제', '전체 장소 복제'],
+  '2-2': ['미확정 상태로 복제돼요', '내 메모 있음', '3곳 미리보기'],
+  '2-3': ['다른 맵에 복제', '선택한 2곳', '이 맵의 전체 장소 4곳'],
+  '2-4': ['개인 추가 정보 · 기본 해제', '내 메모', '직접 올린 사진', '내 방문 기록'],
+  '2-5': ['가져오지 않음: 관심 표시 · 이번 약속 · 상대방 평가', '나만', '사용자 A 작성'],
+  '2-6': ['일부 완료 · 4곳 중 3곳', '출처 추가', '실패한 1곳만 다시 복제'],
+  '2-7': ['복제한 사람: 사용자 B', '원래 맵 이름은 표시하지 않아요'],
   '4-1': ['내 개인 맵', '함께 쓰기', '위치 미확정 1곳', '+ 링크 등록'],
   '4-2': ['우리 공유 맵', '이미지 없음', '테라스 분위기와 피스타치오 음료', '보낸 사람 A · 가고 싶어: A'],
   '4-3': ['맵 전환', '장소 4곳', '지금 보는 맵', 'DM 기본 저장 위치는 바뀌지 않아요.'],
@@ -28,7 +37,431 @@ const EXPECTED = {
   '4-6': ['공유 맵에 아직 장소가 없어요', '내 개인 맵에서 복제', '사용자 A, 사용자 B에게 보여요.'],
   '4-7': ['연남 파스타', '맞는 장소가 없어요', '검색어 지우기', '메뉴·메모 내용은 검색되지 않아요.'],
   '4-8': ['지도를 불러오지 못했어요', '목록과 원본 링크는 그대로 이용할 수 있어요.', '다시 시도', '원본'],
+  '6-1': ['게시물 추천 메뉴', '자동 추출', '우리 메모', '작성: 사용자 A'],
+  '6-2': ['참고 글 2개', '이 맵에서 삭제', '기록 전체 보기'],
+  '6-3': ['원문에 접근할 수 없어요', '자동 추출 · 저장 당시', '위치 직접 정하기'],
+  '6-4': ['직접 수정됨 · 사용자 B', 'data-field="memoText"', '<textarea'],
+  '6-5': ['이 위치로 저장', '여기로 옮기기'],
+  '6-6': ['우리 공유 맵에서 삭제할까요?', 'role="alertdialog"', 'data-autofocus'],
+  '3-1': ['게시물·릴스 링크', '연결 전에는 개인 맵에 저장돼요', '누구에게 보이나요'],
+  '3-2': ['어디에 저장할까요?', '둘 다', '이번 등록에만 적용'],
+  '3-3': ['접수됨 · 아직 저장 전', '링크를 접수했어요', '처리함에서 보기'],
+  '3-4': ['저장 완료', '실제 등록한 맵과 결과', '카드 보기'],
+  '3-5': ['일부 완료', '저장 실패', '실패한 맵에만 다시 저장'],
+  '3-6': ['분석 미지원 출처', '링크만 보관', '보관하기'],
+  '3-7': ['이미 저장된 링크', '기존 카드로 이동해요'],
+  '5-1': ['처리함', '연결 대기', '분석 중', '확인 필요'],
+  '5-2': ['이 항목의 저장 대상', '이 항목에만 적용', '적용'],
+  '5-3': ['어느 지점인가요?', '연남점', '합정점', '고르기 전에는 지도에 핀을 만들지 않아요'],
+  '5-4': ['콘텐츠를 읽을 수 없어요', '장소·메뉴를 추측하지 않았어요', '게시물 본문 붙여넣기'],
+  '5-5': ['여러 장소 확인 필요', '미확정 · 지도에 표시 안 됨', '장소 추가'],
+  '5-6': ['장소 정보 확인 필요', '게시물에서 장소를 찾지 못했어요', '메뉴 정보 없음'],
+  '5-7': ['DM 회신이 늦거나 오지 않을 수 있어요', '평소보다 오래 걸리고 있어요', '완료 시간은 약속드리기 어려워요'],
+  '5-8': ['공유 맵 권한 종료', '종료된 공유 맵에는 저장할 수 없어요', '개인 맵 저장만 유지'],
+  '7-1': ['이번 약속 후보가 아직 없어요', '공유 맵에서 후보 고르기'],
+  '7-2': ['후보 2/3', '후보에서 빼기', '가고 싶어'],
+  '7-3': ['후보 비교 · 3곳', '원문 메뉴', '이곳으로 정하기'],
+  '7-4': ['후보는 최대 3곳이에요', '바꿀 후보를 골라 주세요', '고른 후보와 바꾸기'],
+  '7-5': ['최종 장소 선택됨', '선택: 사용자 B', '선택 변경'],
+  '7-6': ['다녀왔어요 · 우리 공유 맵', '내 개인 맵의 복제본은 바뀌지 않아요', '새 약속 후보 고르기'],
+  '8-1': ['맵·설정', 'DM 계정 연결', 'DM 기본 저장 위치', '기록 내보내기'],
+  '8-2': ['이후 접수 항목부터 적용', '웹에서 보고 있는 맵과는 별개'],
+  '8-3': ['접근 가능한 맵만', '파일 형식 미정', '내보내기 요청'],
+  '8-4': ['휴지통', '복구 가능 기간 미정', '우리 공유 맵에 복구'],
+  '8-5': ['공유 맵에서 나갈까요?', '공유 장소 골라서 복제', '상대방의 DM 계정 연결은 바뀌지 않아요'],
+  '8-6': ['공유 연결 종료됨', 'DM 기본 저장 위치를 바꿨어요', '이전 공유 기록은 공개되지 않아요'],
+  '8-7': ['기록 삭제', '계정 탈퇴', '미정', '기록 내보내기'],
 };
+
+test('복제 미리보기는 추가 정보가 모두 해제되고 직접 진입·접근 실패를 안전하게 표시한다', () => {
+  const preview = CATALOG.find((entry) => entry.id === '2-4');
+  const markup = renderRoute(catalogState(preview), preview.route);
+  assert.equal([...markup.matchAll(/type="checkbox"/g)].length, 3);
+  assert.doesNotMatch(markup, /\schecked(?:\s|>)/);
+  for (const route of ['#/copy/preview', '#/copy/result']) assert.match(renderRoute(createScenario('connected'), route), /복제할 장소를 먼저 골라 주세요/);
+  for (const suffix of ['', '/edit', '/location', '/history']) {
+    const route = `#/place/pa-book${suffix}`;
+    const denied = renderRoute(createScenario('connected'), route);
+    assert.match(denied, /이 장소를 볼 수 없어요/);
+    assert.doesNotMatch(denied, /pa-book|예시 개인 서점|personal-a/);
+    const loggedOut = createScenario();
+    assert.match(renderRoute(loggedOut, `#/place/shared-cafe${suffix}`), /로그인 후/);
+  }
+  for (const route of ['#/copy/initial', '#/copy/select', '#/copy/preview', '#/copy/result']) assert.match(renderRoute(createScenario(), route), /로그인 후/);
+  assert.deepEqual(parseRoute('#/place/%ED%95%9C%EA%B8%80%20id/edit'), { path: '/place/:id/edit', params: { id: '한글 id' } });
+  assert.equal(parseRoute('#/place/%ZZ').path, '/start');
+  assert.equal(parseRoute('#/place/a/bogus').path, '/start');
+});
+
+test('공유 결과·상세·이력은 비공개 원본 맵 이름과 ID를 표시하지 않는다', () => {
+  for (const id of ['2-6', '2-7', '6-1', '6-2', '6-4', '6-6']) {
+    const entry = CATALOG.find((item) => item.id === id);
+    assert.doesNotMatch(renderRoute(catalogState(entry), entry.route), /내 개인 맵|personal-b/);
+  }
+  let state = reduceAction(createScenario('copy-preview'), 'copy-execute');
+  const copiedId = state.copy.result.items.find((item) => item.outcome === 'new').targetPlaceId;
+  state = { ...state, currentUserId: 'user-a' };
+  for (const suffix of ['', '/history']) {
+    const markup = renderRoute(state, `#/place/${copiedId}${suffix}`);
+    assert.match(markup, /복제한 사람: 사용자 B/);
+    assert.doesNotMatch(markup, /내 개인 맵|personal-b|테라스 자리 먼저 보기|오전에 가기/);
+  }
+  const files = readdirSync(new URL('../src/', import.meta.url), { recursive: true }).filter((file) => file.endsWith('.js'));
+  for (const file of files) assert.ok(!readFileSync(new URL(`../src/${file.replaceAll('\\', '/')}`, import.meta.url), 'utf8').includes('todo/UI-02'), file);
+});
+
+test('공유 원본 삭제 후 재복제해도 상대방 화면의 링크·속성에 개인 맵 ID가 없다', () => {
+  for (const legacyId of [null, 'personal-b--shared-wine']) {
+    let state = createScenario('connected');
+    const first = executeCopy(state, buildCopyDraft(state, {
+      sourceMapId: 'shared-ab', targetMapId: 'personal-b', placeIds: ['shared-wine'],
+    }).draft);
+    assert.equal(first.result.items[0].outcome, 'new');
+    state = first.state;
+    let personalId = first.result.items[0].targetPlaceId;
+    if (legacyId) {
+      state.places.find((place) => place.id === personalId).id = legacyId;
+      personalId = legacyId;
+    }
+    state = trashPlace(state, 'shared-wine');
+    const next = executeCopy(state, buildCopyDraft(state, {
+      sourceMapId: 'personal-b', targetMapId: 'shared-ab', placeIds: [personalId],
+    }).draft);
+    assert.equal(next.result.items[0].outcome, 'new');
+    const sharedId = next.result.items[0].targetPlaceId;
+    assert.equal(next.state.places.find((place) => place.id === sharedId).copyOf, personalId);
+    const viewer = { ...next.state, currentUserId: 'user-a', currentMapId: 'shared-ab' };
+    for (const route of ['#/map', '#/map?view=list', '#/copy/result',
+      ...['', '/history', '/edit', '/location'].map((suffix) => `#/place/${encodeURIComponent(sharedId)}${suffix}`)]) {
+      const markup = renderRoute(viewer, route);
+      assert.match(markup, /예시 와인바/);
+      assert.doesNotMatch(markup, /personal-b|내 개인 맵/, route);
+      if (route.includes('/place/')) assert.doesNotMatch(markup, new RegExp(personalId), route);
+    }
+    const repeat = executeCopy(next.state, buildCopyDraft(next.state, {
+      sourceMapId: 'personal-b', targetMapId: 'shared-ab', placeIds: [personalId],
+    }).draft);
+    assert.equal(repeat.result.items[0].outcome, 'unchanged');
+    assert.equal(repeat.result.items[0].targetPlaceId, sharedId);
+    assert.equal(repeat.state.places.length, next.state.places.length);
+  }
+});
+
+test('미리보기 왕복의 close-sheet는 선택과 두 체크박스의 체크 상태를 보존한다', () => {
+  const store = createStore(createScenario('copy-initial'));
+  const ids = ['pb-soup', 'pb-bakery'];
+  for (const id of ids) store.dispatch('copy-pick', id);
+  store.dispatch('copy-pick-preview');
+  store.dispatch('clear-navigate');
+  store.dispatch('close-sheet');
+  assert.match(renderRoute(store.getState(), '#/copy/preview'), /href="#\/copy\/select"/);
+  store.dispatch('close-sheet');
+  assert.deepEqual(store.getState().ui.copyPick, ids);
+  const markup = renderRoute(store.getState(), '#/copy/select');
+  for (const id of ids) assert.ok(markup.includes(`data-action="copy-pick" data-id="${id}" checked`));
+  assert.match(markup, /2곳 미리보기/);
+});
+
+test('시트 직접 닫기·맵 전환·복제 완료·새 복제 시작은 선택을 초기화한다', () => {
+  for (const action of ['close-sheet', 'switch-map', 'show-map', 'copy-done', 'copy-initial-next', 'copy-select-start']) {
+    const store = createStore(createScenario('copy-initial'));
+    for (const id of ['pb-soup', 'pb-bakery']) store.dispatch('copy-pick', id);
+    store.dispatch('copy-pick-preview');
+    if (action === 'close-sheet') store.dispatch('open-copy', 'selected');
+    if (action === 'copy-done') store.dispatch('copy-execute');
+    store.dispatch(action, 'personal-b');
+    assert.deepEqual(store.getState().ui.copyPick, [], action);
+  }
+});
+
+test('초기 복제·전체 확인·시트·권한 실패·편집·삭제·되돌리기 액션이 화면으로 이어진다', () => {
+  const store = createStore(createScenario('copy-initial'));
+  assert.match(renderRoute(store.getState(), '#/connected'), /href="#\/copy\/initial"/);
+  store.dispatch('copy-initial-next');
+  assert.equal(store.getState().ui.navigateTo, '#/copy/select');
+  for (const id of ['pb-cafe', 'pb-soup', 'pb-bakery']) store.dispatch('copy-pick', id);
+  store.dispatch('copy-pick', 'pa-book');
+  assert.equal(store.getState().ui.copyPick.length, 3);
+  store.dispatch('copy-pick-preview');
+  assert.equal(store.getState().copy.draft.back, '#/copy/select');
+  store.dispatch('copy-execute');
+  assert.equal(store.getState().ui.navigateTo, '#/copy/result');
+  store.dispatch('copy-done');
+  assert.equal(store.getState().currentMapId, 'shared-ab');
+  assert.equal(store.getState().copy.draft, null);
+  assert.equal(store.getState().copy.result, null);
+  assert.match(renderRoute(store.getState(), '#/map?view=list'), /예시 베이커리/);
+
+  store.applyScenario('copy-initial');
+  store.dispatch('copy-choice', 'all');
+  store.dispatch('copy-initial-next');
+  assert.equal(store.getState().ui.navigateTo, '#/copy/preview');
+  assert.equal(store.getState().copy.draft.back, '#/copy/initial');
+  assert.equal(store.getState().copy.draft.placeIds.length, 4);
+  assert.deepEqual(store.getState().copy.draft.extras, { memo: false, photos: false, visits: false });
+  const revoked = structuredClone(store.getState());
+  revoked.ui.navigateTo = null;
+  revoked.maps.find((map) => map.type === 'shared').active = false;
+  store.replaceState(revoked);
+  store.dispatch('copy-execute');
+  assert.equal(store.getState().ui.navigateTo, null);
+  assert.match(store.getState().ui.notice, /대상 맵에 접근할 수 없어/);
+  assert.deepEqual(store.getState().places, revoked.places);
+
+  store.applyScenario('connected-personal');
+  store.dispatch('select-place', 'pb-soup');
+  store.dispatch('open-copy', 'selected');
+  assert.match(renderRoute(store.getState(), '#/map?view=list'), /선택한 1곳/);
+  store.dispatch('copy-sheet-preview');
+  assert.equal(store.getState().copy.draft.back, '#/map?view=list');
+  store.dispatch('open-copy', 'one:shared-cafe');
+  assert.match(renderRoute(store.getState(), '#/place/shared-cafe'), /이 장소 1곳/);
+  store.dispatch('copy-sheet-preview');
+  assert.equal(store.getState().copy.draft.direction, 'shared-to-personal');
+  assert.equal(store.getState().copy.draft.back, '#/place/shared-cafe');
+
+  store.dispatch('route-params', { id: 'shared-cafe' });
+  store.dispatch('edit-field', { field: 'name', value: '편집한 예시 카페' });
+  store.dispatch('edit-category', '놀거리');
+  store.dispatch('edit-field', { field: 'memoText', value: '함께 볼 메모' });
+  store.dispatch('save-edit', 'shared-cafe');
+  assert.match(renderRoute(store.getState(), '#/place/shared-cafe'), /편집한 예시 카페|함께 볼 메모/);
+  assert.equal(store.getState().ui.notice, '저장했어요');
+  store.dispatch('open-delete', 'shared-cafe');
+  store.dispatch('confirm-delete', 'shared-cafe');
+  assert.equal(store.getState().ui.navigateTo, '#/map');
+  assert.equal(store.getState().ui.undo.action, 'restore-place');
+  assert.doesNotMatch(renderRoute(store.getState(), '#/map?view=list'), /편집한 예시 카페/);
+  store.dispatch('restore-place', 'shared-cafe');
+  assert.match(renderRoute(store.getState(), '#/map?view=list'), /편집한 예시 카페/);
+  assert.equal(store.getState().ui.undo, null);
+  assert.equal(store.getState().dmDefaultTarget, 'personal');
+  store.dispatch('confirm-delete', 'shared-wine');
+  store.dispatch('source', 'shared-soup');
+  assert.equal(store.getState().ui.undo, null, '새 알림에 이전 삭제의 되돌리기를 붙이지 않는다');
+
+  store.applyScenario('connected-personal');
+  store.dispatch('save-location', 'pb-bakery');
+  assert.match(renderRoute(store.getState(), '#/map'), /data-id="pb-bakery"/);
+  store.applyScenario('solo');
+  assert.match(renderRoute(store.getState(), '#/copy/initial'), /공유 맵이 아직 없어요/);
+  store.dispatch('open-copy', 'all');
+  assert.match(renderRoute(store.getState(), '#/map?view=list'), /복제할 다른 맵이 없어요/);
+});
+
+test('실제 main 이벤트로 화면 이동·메모 조합·모달 포커스 순환·되돌리기·스크롤을 처리한다', async () => {
+  const keys = ['document', 'window', 'HTMLInputElement'];
+  const previous = keys.map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]);
+  const listeners = {}, windowListeners = {};
+  let controls = [], nodes = [], markup = '', hash = '#/catalog', pending = false, renders = 0, scrolled = 0;
+  const decode = (text) => text.replace(/&(?:amp|lt|gt|quot|#39);/g, (value) => ({ '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'" })[value]);
+  class Input {}
+  const doc = { activeElement: null, getElementById(id) {
+    return controls.find((element) => element.id === id) ?? (id === 'place-sources' && markup.includes('id="place-sources"') ? { scrollIntoView() { scrolled += 1; } } : null);
+  } };
+  const app = {
+    addEventListener(type, listener) { listeners[type] = listener; },
+    querySelectorAll(selector) { return nodes.filter((element) => element.matches(selector)); },
+    querySelector(selector) { return this.querySelectorAll(selector)[0] ?? null; },
+    set innerHTML(value) {
+      renders += 1; markup = value; doc.activeElement = null;
+      controls = []; nodes = [];
+      const parents = [];
+      for (const match of value.matchAll(/<\/?([a-z][\w-]*)\b([^>]*)>/gi)) {
+        const [, tag, attrs] = match;
+        if (match[0].startsWith('</')) { parents.pop(); continue; }
+        const attribute = (name) => new RegExp(`(?:^|\\s)${name}="([^"]*)"`).exec(attrs)?.[1];
+        const hasAttribute = (name) => new RegExp(`(?:^|\\s)${name}(?=\\s|=|$)`).test(attrs);
+        const body = tag === 'textarea' ? value.slice(match.index + match[0].length).split('</textarea>')[0] : '';
+        const element = Object.assign(tag === 'input' ? new Input() : {}, {
+          tagName: tag.toUpperCase(), id: attribute('id'), type: attribute('type') ?? 'text',
+          parentElement: parents.at(-1), disabled: hasAttribute('disabled'),
+          tabIndex: hasAttribute('tabindex') ? Number(attribute('tabindex')) : /^(button|input|textarea|select)$/.test(tag) || (tag === 'a' && hasAttribute('href')) ? 0 : -1,
+          value: decode(tag === 'textarea' ? body ?? '' : attribute('value') ?? ''),
+          dataset: { action: attribute('data-action'), id: decode(attribute('data-id') ?? ''), field: attribute('data-field') },
+          autofocus: /\sdata-autofocus(?:\s|$)/.test(attrs),
+          checked: /\schecked(?:\s|$)/.test(attrs),
+          getAttribute: attribute, hasAttribute,
+          focus() { if (!element.disabled && !element.closest('[inert], [hidden]')) doc.activeElement = element; },
+          closest(selector) {
+            for (let node = element; node; node = node.parentElement) if (node.matches(selector)) return node;
+            return null;
+          },
+          contains(other) {
+            for (let node = other; node; node = node.parentElement) if (node === element) return true;
+            return false;
+          },
+          querySelectorAll(selector) { return nodes.filter((node) => node !== element && element.contains(node) && node.matches(selector)); },
+          setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; },
+          matches(selector) {
+            return selector.split(',').some((part) => {
+              const tagName = part.trim().match(/^[a-z]+/i)?.[0];
+              const className = part.match(/\.([\w-]+)/)?.[1];
+              return (!tagName || tagName === tag) && (!className || (attribute('class') ?? '').split(/\s+/).includes(className)) &&
+                [...part.matchAll(/\[([\w-]+)(?:="([^"]*)")?\]/g)].every(([, name, expected]) => expected === undefined ? hasAttribute(name) : attribute(name) === expected);
+            });
+          },
+        });
+        nodes.push(element);
+        if (/^(button|a|input|textarea|select)$/.test(tag)) controls.push(element);
+        if (!/^(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/.test(tag)) parents.push(element);
+      }
+    },
+  };
+  doc.querySelector = () => app;
+  const win = { location: { get hash() { return hash; }, set hash(value) { if (hash !== value) { hash = value; pending = true; } } },
+    addEventListener(type, listener) { windowListeners[type] = listener; }, scrollTo() {} };
+  function flush() {
+    for (let count = 0; pending; count += 1) {
+      assert.ok(count < 5, '이동이 반복되지 않아야 한다');
+      pending = false; windowListeners.hashchange();
+    }
+  }
+  function control(action, id) {
+    const found = controls.find((element) => element.dataset.action === action && (id === undefined || element.dataset.id === id));
+    assert.ok(found, `${action}: ${id ?? ''}`);
+    return found;
+  }
+  function click(action, id) {
+    const target = control(action, id); target.focus();
+    listeners.click({ target, preventDefault() {} }); flush();
+  }
+  function preset(id) { win.location.hash = '#/catalog'; flush(); click('catalog', id); }
+  function key(key, shiftKey = false) {
+    let prevented = false;
+    listeners.keydown({ key, shiftKey, preventDefault() { prevented = true; } });
+    return prevented;
+  }
+  function checkModalFocus(role, firstAction, lastAction) {
+    const modal = app.querySelector(`[role="${role}"]`);
+    assert.ok(modal);
+    const catalog = app.querySelector('.catalog-access');
+    assert.ok(catalog.closest('[inert]'), '카탈로그 링크도 inert 영역에 포함된다');
+    for (const element of controls) {
+      if (!modal.contains(element) && element.tabIndex >= 0) assert.ok(element.closest('[inert]'), '모달 밖 컨트롤은 inert여야 한다');
+    }
+    const first = modal.querySelectorAll('[data-action]').find((element) => element.dataset.action === firstAction);
+    const last = modal.querySelectorAll('[data-action]').find((element) => element.dataset.action === lastAction);
+    assert.ok(first);
+    assert.ok(last);
+    assert.equal(doc.activeElement, first, 'data-autofocus 또는 모달의 첫 컨트롤에 포커스한다');
+    catalog.focus();
+    assert.equal(doc.activeElement, first, 'inert 배경에는 포커스할 수 없다');
+    assert.equal(key('Tab'), false, '모달 중간의 기본 Tab 이동은 유지한다');
+    assert.equal(key('Tab', true), true);
+    assert.equal(doc.activeElement, last, '첫 요소의 Shift+Tab은 마지막 요소로 순환한다');
+    assert.equal(key('Tab', true), false, '모달 중간의 기본 Shift+Tab 이동은 유지한다');
+    assert.equal(key('Tab'), true);
+    assert.equal(doc.activeElement, first, '마지막 요소의 Tab은 첫 요소로 순환한다');
+  }
+  Object.assign(globalThis, { document: doc, window: win, HTMLInputElement: Input });
+  try {
+    await import('../src/main.js?ui02-interactions');
+    preset('2-1');
+    click('copy-initial-next');
+    assert.equal(hash, '#/copy/select');
+    for (const id of ['pb-soup', 'pb-bakery']) {
+      listeners.input({ target: control('copy-pick', id) }); flush();
+    }
+    click('copy-pick-preview');
+    assert.equal(hash, '#/copy/preview');
+    for (const back of ['link', 'history']) {
+      win.location.hash = back === 'link'
+        ? controls.find((element) => element.tagName === 'A' && element.getAttribute('href') === '#/copy/select').getAttribute('href')
+        : '#/copy/select';
+      flush();
+      for (const id of ['pb-soup', 'pb-bakery']) assert.equal(control('copy-pick', id).checked, true, back);
+      assert.match(markup, /2곳 미리보기/);
+      click('copy-pick-preview');
+      assert.equal(hash, '#/copy/preview');
+    }
+    click('copy-execute');
+    assert.equal(hash, '#/copy/result');
+    click('copy-done');
+    assert.equal(hash, '#/map');
+
+    preset('6-4');
+    let memo = doc.getElementById('edit-memoText'); memo.focus();
+    const before = renders;
+    listeners.compositionstart({ target: memo });
+    memo.value = '함'; listeners.input({ target: memo, isComposing: true });
+    memo.value = '함께'; listeners.input({ target: memo });
+    assert.equal(renders, before);
+    memo.value = '함께 입력한 메모';
+    listeners.compositionend({ target: memo });
+    memo = doc.getElementById('edit-memoText');
+    assert.equal(memo.value, '함께 입력한 메모');
+    assert.equal(doc.activeElement, memo);
+    const name = doc.getElementById('edit-name');
+    name.value = '예시 수정 카페'; listeners.input({ target: name });
+    click('save-edit', 'shared-cafe');
+    assert.equal(hash, '#/place/shared-cafe');
+    assert.match(markup, /예시 수정 카페|함께 입력한 메모/);
+    assert.match(markup, /class="toast" role="status"><span>저장했어요/);
+    click('open-delete', 'shared-cafe');
+    assert.equal(doc.activeElement.dataset.action, 'confirm-delete');
+    checkModalFocus('alertdialog', 'confirm-delete', 'close-sheet');
+    listeners.keydown({ key: 'Escape', preventDefault() {} });
+    assert.doesNotMatch(markup, /role="alertdialog"/);
+    assert.equal(doc.activeElement, control('open-delete', 'shared-cafe'));
+    assert.equal(app.querySelector('.catalog-access').closest('[inert]'), null);
+    click('open-delete', 'shared-cafe');
+    click('confirm-delete', 'shared-cafe');
+    assert.equal(hash, '#/map');
+    assert.match(markup, /휴지통으로 이동했어요.*되돌리기/s);
+    assert.doesNotMatch(markup, /예시 수정 카페/);
+    click('restore-place', 'shared-cafe');
+    assert.match(markup, /예시 수정 카페/);
+    assert.match(markup, /되돌렸어요/);
+
+    preset('6-2');
+    assert.equal(scrolled, 1);
+    click('directions');
+    assert.equal(scrolled, 1, 'scrollTarget은 한 번만 처리한다');
+    assert.match(markup, /외부 지도 앱 연결은 아직 준비 중이에요/);
+
+    preset('2-3');
+    assert.match(markup, /role="dialog"/);
+    checkModalFocus('dialog', 'close-sheet', 'copy-sheet-preview');
+    click('copy-scope', 'all');
+    assert.equal(doc.activeElement, control('copy-scope', 'all'), '모달 내부 재렌더 후 포커스를 보존한다');
+    assert.equal(key('Escape'), true);
+    assert.equal(app.querySelector('[aria-modal="true"]'), null);
+    assert.equal(app.querySelector('.catalog-access').closest('[inert]'), null);
+    click('open-copy', 'selected');
+    checkModalFocus('dialog', 'close-sheet', 'copy-sheet-preview');
+    click('close-sheet');
+    assert.equal(doc.activeElement, control('open-copy', 'selected'));
+    click('open-copy', 'selected');
+    assert.equal(key('Escape'), true);
+    assert.equal(doc.activeElement, control('open-copy', 'selected'));
+    click('open-copy', 'selected');
+    click('copy-sheet-preview');
+    assert.equal(hash, '#/copy/preview');
+    assert.match(markup, /2곳 복제하기/);
+    preset('6-6');
+    assert.equal(doc.activeElement.dataset.action, 'confirm-delete');
+    checkModalFocus('alertdialog', 'confirm-delete', 'close-sheet');
+    click('close-sheet');
+    click('open-delete', 'shared-soup');
+    checkModalFocus('alertdialog', 'confirm-delete', 'close-sheet');
+    click('close-sheet');
+    assert.equal(doc.activeElement, control('open-delete', 'shared-soup'));
+    click('open-copy', 'one:shared-soup');
+    checkModalFocus('dialog', 'close-sheet', 'copy-sheet-preview');
+    assert.equal(key('Escape'), true);
+    assert.equal(doc.activeElement, control('open-copy', 'one:shared-soup'));
+    preset('6-5');
+    click('save-location', 'pb-bakery');
+    assert.equal(hash, '#/place/pb-bakery');
+    assert.match(markup, /위치 확인됨/);
+  } finally {
+    for (const [key, descriptor] of previous) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+      else delete globalThis[key];
+    }
+  }
+});
 
 for (const entry of CATALOG) {
   test(`${entry.id} 카탈로그 프리셋이 화면 명세와 비공개 경계를 지킨다`, () => {
@@ -64,9 +497,9 @@ test('시나리오는 독립된 전체 상태이며 시나리오 전환 시 화�
   assert.equal(store.getState().maps.some((map) => map.type === 'shared'), false);
 });
 
-test('17개 카탈로그 화면과 추가 링크는 등록된 라우트로 연결된다', () => {
-  assert.equal(CATALOG.length, 17);
-  assert.equal(new Set(CATALOG.map((entry) => entry.id)).size, 17);
+test('58개 카탈로그 화면과 추가 링크는 등록된 라우트로 연결된다', () => {
+  assert.equal(CATALOG.length, 58);
+  assert.equal(new Set(CATALOG.map((entry) => entry.id)).size, 58);
   const views = CATALOG.map((entry) => renderRoute(catalogState(entry), entry.route));
   views.push(renderRoute(createScenario(), '#/catalog'), renderRoute(createScenario(), '#/demo/dm'));
   for (const markup of views) {
@@ -113,9 +546,13 @@ test('로그인·본인 확인·저장 요청은 완료를 꾸미지 않고 다�
   assert.ok(renderRoute(state, '#/verify').includes('네, 제 계정이에요'));
   state = reduceAction(state, 'verify-account');
   assert.equal(state.dmAccountVerified, true);
-  assert.ok(renderRoute(state, '#/save-target').includes('#/todo/UI-03/5-1'));
+  assert.ok(renderRoute(state, '#/save-target').includes('data-action="confirm-intake"'));
   assert.equal(state.places.filter((place) => place.mapId === 'personal-b').length, 0);
-  assert.ok(renderRoute(state, '#/todo/UI-03/5-1').includes('준비 중인 화면이에요'));
+  state = reduceAction(state, 'confirm-intake');
+  assert.equal(state.intake.jobs.length, 1);
+  assert.equal(state.intake.jobs[0].stage, 'processing');
+  assert.equal(state.places.filter((place) => place.mapId === 'personal-b').length, 0);
+  assert.match(renderRoute(state, state.ui.navigateTo), /아직|분석 중/);
   assert.ok(renderRoute(createScenario(), '#/demo/dm').includes('[공유한 릴스 · 시연용]'));
 });
 
@@ -201,14 +638,18 @@ test('시작 화면은 원문 설명과 상단 워드마크·단계 카드·하�
   assert.doesNotMatch(markup, /brand-mark|eyebrow|⌁|마음에 든 장소를 보내 주세요/);
 });
 
-test('카탈로그 17개 제목은 리뷰에 지정된 목업 제목을 유지한다', () => {
-  assert.deepEqual(CATALOG.map(({ title }) => title), [
+test('기존 카탈로그 30개 제목은 브리프에 지정된 목업 제목을 유지한다', () => {
+  assert.deepEqual(CATALOG.filter(({ id }) => /^[1246]-/.test(id)).map(({ title }) => title), [
     '서비스 소개 · 개인 맵 시작', '최초 DM → 웹 연결 · 비공개 임시 접수', '본인 계정 확인',
     '저장 대상 확인 · 연결 전', '함께 쓰기 → 연결 코드 만들기 · 사용자 A', '코드 상태 · 만료·취소·사용 완료·재발급',
     '코드 입력 → 연결 대상 확인 · 사용자 B', '연결 완료 · 개인 맵 유지 → 초기 복제', '이미 활성 공유 맵에 참여 중',
+    '초기 복제 선택', '내 개인 장소에서 선택', '연결 후 진입 · 상세 1개 / 선택 / 전체',
+    '미리보기 · 개인 → 공유', '미리보기 · 공유 → 내 개인', '결과 · 새 장소·출처 추가·일부 실패', '복제 이력 · 원 저장자와 복제한 사람',
     '개인 맵 지도 · 연결 전', '공유 맵 · 핀 → 하단 카드 요약', '맵 전환',
     '목록 · 방문 상태·보낸 사람 조회, 미확정 포함', '개인 맵 빈 상태', '공유 맵 빈 상태',
     '검색 결과 없음', '지도 로딩 실패 · 목록·원본은 이용 가능',
+    '공유 맵 상세 · 정보 카드 (상단)', '상세 (스크롤 하단) · 출처·기록·관리', '이미지 없음 + 원문 접근 불가 · 개인 맵',
+    '정보·카테고리·메모 수정', '위치 수정', '이 맵에서 삭제 → 휴지통',
   ]);
 });
 
@@ -266,12 +707,12 @@ test('목록 복제 버튼은 선택 모드 밖에도 있고 선택한 장소가
   const store = createStore(createScenario('connected'));
   let markup = renderRoute(store.getState(), '#/map?view=list');
   assert.match(markup, /<button[^>]*disabled[^>]*>선택해서 복제<\/button>/);
-  assert.match(markup, /href="#\/todo\/UI-02\/2-4"[^>]*>전체 복제<\/a>/);
+  assert.match(markup, /data-action="open-copy" data-id="all"[^>]*>전체 복제<\/button>/);
   assert.doesNotMatch(markup, /type="checkbox"/);
   store.dispatch('toggle-selection');
   store.dispatch('select-place', 'shared-cafe');
   markup = renderRoute(store.getState(), '#/map?view=list');
-  assert.match(markup, /href="#\/todo\/UI-02\/2-4"[^>]*>선택해서 복제<\/a>/);
+  assert.match(markup, /data-action="open-copy" data-id="selected"[^>]*>선택해서 복제<\/button>/);
   store.dispatch('toggle-selection');
   assert.match(renderRoute(store.getState(), '#/map?view=list'), /<button[^>]*disabled[^>]*>선택해서 복제<\/button>/);
 });

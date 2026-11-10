@@ -146,7 +146,7 @@ test('일반 입력은 즉시 검색하고 체크박스는 장소 ID로 선택·
     checkbox.value = 'on';
     app.emit('input', checkbox);
     assert.equal(app.control('select-place', 'shared-cafe').checked, true);
-    assert.match(app.markup, /href="#\/todo\/UI-02\/2-4"[^>]*>선택해서 복제/);
+    assert.match(app.markup, /<button[^>]*data-action="open-copy" data-id="selected"[^>]*>선택해서 복제/);
     checkbox = app.control('select-place', 'shared-cafe');
     app.emit('input', checkbox);
     assert.equal(app.control('select-place', 'shared-cafe').checked, false);

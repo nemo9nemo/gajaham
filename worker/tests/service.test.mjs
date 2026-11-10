@@ -1,0 +1,114 @@
+import test, { after } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { Miniflare, Log, LogLevel, convertV4MiniflareOptions } from 'miniflare';
+import { createStore } from '../src/store.mjs';
+import { createService } from '../src/service.mjs';
+import { createApi } from '../src/api.mjs';
+const mf = new Miniflare(convertV4MiniflareOptions({ modules: true, script: 'export default {fetch(){return new Response("local only")}}', compatibilityDate: '2026-08-01', d1Databases: { DB: 'test-d1' }, log: new Log(LogLevel.NONE) }));
+after(() => mf.dispose());
+const binding = await mf.getD1Database('DB');
+const schema = await readFile(new URL('../migrations/0001_documents.sql', import.meta.url), 'utf8');
+for (const statement of schema.match(/CREATE[\s\S]*?(?=\r?\nCREATE|$)/g)) await binding.exec(statement.replaceAll(/\r?\n/g, ' '));
+const db = createStore(binding); let failDeletion = false; const gone = new Set();
+const auth = { async deleteUser(uid) { if (failDeletion) throw new Error('temporary upstream failure'); gone.add(uid); } };
+const service = createService({ db, auth });
+const input = { sourceUrl: '', name: '가상 장소', address: '가상 주소', category: 'food', memo: '', menu: '', visited: false };
+const call = (uid, action, payload = {}) => service.handle(uid, Date.now() / 1000, action, payload);
+const payload = record => ({ requestId: crypto.randomUUID(), record });
+test('D1: UID isolation, concurrent duplicate creation, revision conflict and retired request fences', async () => {
+  const uid = 'alice'; const rid = crypto.randomUUID();
+  assert.equal((await call(uid, 'create', { requestId: rid, record: input })).record.revision, 1);
+  assert.equal((await call('bob', 'list')).items.length, 0);
+  await assert.rejects(call('bob', 'update', { id: rid, revision: 1, requestId: crypto.randomUUID(), record: input }), { code: 'not-found' });
+  await assert.rejects(call(uid, 'create', payload({ ...input, uid: 'bob' })), { code: 'invalid-argument' });
+  const linked = { ...input, sourceUrl: 'https://instagram.com/p/ONLY_TEST/' }; const requests = [payload(linked), payload(linked)];
+  const results = await Promise.all(requests.map(data => call(uid, 'create', data)));
+  assert.equal(results.filter(r => r.duplicate).length, 1);
+  const dup = requests[results.findIndex(r => r.duplicate)]; const original = results.find(r => !r.duplicate).record;
+  assert.equal((await call(uid, 'create', dup)).duplicate, true);
+  await assert.rejects(call(uid, 'create', { ...dup, record: { ...linked, sourceUrl: 'https://example.invalid/other' } }), { code: 'already-exists' });
+  assert.equal((await db.doc(`users/${uid}`).get()).data().operationCount, 3);
+  const update = { id: rid, revision: 1, requestId: crypto.randomUUID(), record: { ...input, memo: '편집' } };
+  const edits = await Promise.allSettled([call(uid, 'update', update), call(uid, 'update', { ...update, requestId: crypto.randomUUID() })]);
+  assert.equal(edits.filter(r => r.status === 'fulfilled').length, 1); assert.equal(edits.find(r => r.status === 'rejected').reason.code, 'aborted');
+  const latest = (await call(uid, 'list')).items.find(x => x.id === rid);
+  await call(uid, 'trash', { id: rid, revision: latest.revision, requestId: crypto.randomUUID() });
+  await call(uid, 'remove', { id: rid, revision: latest.revision + 1, requestId: crypto.randomUUID() });
+  await assert.rejects(call(uid, 'create', { requestId: rid, record: input }), { code: 'failed-precondition' });
+  assert.deepEqual((await db.doc(`users/${uid}/removedRequests/${rid}`).get()).data(), { removed: true });
+  await call(uid, 'trash', { id: original.id, revision: 1, requestId: crypto.randomUUID() });
+  await call(uid, 'remove', { id: original.id, revision: 2, requestId: crypto.randomUUID() });
+  await assert.rejects(call(uid, 'create', dup), { code: 'failed-precondition' });
+  assert.equal((await binding.prepare('SELECT count(*) AS n FROM transaction_checks').first()).n, 0);
+});
+test('D1: transaction rolls back every write when a version changes', async () => {
+  const ref = db.doc('test/atomic'); await ref.set({ value: 0 }); let reads = 0;
+  await db.runTransaction(async tx => { const old = await tx.get(ref); if (reads++ === 0) await ref.update({ value: 10 }); tx.set(ref, { value: old.data().value + 1 }); tx.set(db.doc('test/also'), { value: old.data().value }); });
+  assert.equal((await ref.get()).data().value, 11); assert.equal((await db.doc('test/also').get()).data().value, 10);
+});
+test('D1: bounded permanent deletion retries, receipt privacy and tombstone cleanup', async () => {
+  const uid = 'delete-me'; await call(uid, 'create', payload(input)); const receipt = 'a'.repeat(64);
+  await assert.rejects(service.handle(uid, Date.now() / 1000 - 600, 'startDeletion', { receipt }), { code: 'failed-precondition' });
+  await call(uid, 'startDeletion', { receipt }); failDeletion = true;
+  await assert.rejects(service.finishDeletion(uid)); await assert.rejects(call(uid, 'list'), { code: 'failed-precondition' });
+  assert.deepEqual(await service.deletionStatus({ receipt }), { state: 'deleting' });
+  failDeletion = false; await service.finishDeletion(uid); await service.finishDeletion(uid); assert.ok(gone.has(uid));
+  assert.deepEqual(await service.deletionStatus({ receipt }), { state: 'deleted' });
+  assert.equal((await db.doc(`users/${uid}`).collection('records').get()).size, 0);
+  await db.expired(Date.now() + 8 * 86400000); assert.deepEqual(await service.deletionStatus({ receipt }), { state: 'unknown' });
+});
+test('D1: full expired page stays readable; bulk deletion makes durable progress and cron resumes it', async () => {
+  const uid = 'expired-page'; await call(uid, 'list');
+  const rows = Array.from({ length: 200 }, () => ({ id: crypto.randomUUID(), ...input, state: 'trash', deletedAt: Date.now() - 31 * 86400000, revision: 1 }));
+  await binding.batch(rows.map(row => binding.prepare('INSERT INTO documents(path,parent,body,version) VALUES(?,?,?,?)').bind(`users/${uid}/records/${row.id}`, `users/${uid}/records`, JSON.stringify(row), crypto.randomUUID())));
+  await db.doc(`users/${uid}`).update({ count: 200, bytes: 0 });
+  assert.equal((await call(uid, 'list')).items.length, 0);
+  assert.equal((await binding.prepare('SELECT count(*) AS n FROM documents WHERE parent = ?').bind(`users/${uid}/records`).first()).n, 197);
+  const bulk = 'bulk-delete'; await call(bulk, 'list'); const receipt = 'b'.repeat(64); await call(bulk, 'startDeletion', { receipt });
+  await binding.batch(Array.from({ length: 501 }, (_, i) => binding.prepare('INSERT INTO documents(path,parent,body,version) VALUES(?,?,?,?)').bind(`users/${bulk}/removedRequests/${i}`, `users/${bulk}/removedRequests`, '{}', crypto.randomUUID())));
+  await assert.rejects(service.finishDeletion(bulk));
+  assert.equal((await binding.prepare('SELECT count(*) AS n FROM documents WHERE parent = ?').bind(`users/${bulk}/removedRequests`).first()).n, 101);
+  assert.deepEqual(await service.deletionStatus({ receipt }), { state: 'deleting' });
+  await createApi({ db, auth, verifier: {}, origin: 'https://test.invalid' }).scheduled();
+  assert.deepEqual(await service.deletionStatus({ receipt }), { state: 'deleted' });
+});
+test('HTTP: quota errors stay unavailable; strict CORS, body bounds, auth, revoked/disabled accounts', async () => {
+  let disabled = false; let validSince = 0; const waits = [];
+  const api = createApi({ db, auth: { ...auth, async current() { return { disabled, validSince }; } }, verifier: { async check(value) { if (value !== 'valid') throw Object.assign(new Error(), { code: 'not trusted' }); }, async auth(token) { if (token !== 'valid') throw new Error(); return { uid: 'http', auth_time: Date.now() / 1000 - 10 }; } }, origin: 'https://test.invalid' });
+  const post = (data = { action: 'list' }, more = {}) => api.fetch(new Request('https://api.invalid/personalApi', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer valid', 'x-firebase-appcheck': 'valid', ...more }, body: JSON.stringify({ data }) }), { waitUntil(promise) { waits.push(promise); } });
+  assert.equal((await post()).status, 200); assert.equal((await post({}, { origin: 'https://evil.invalid' })).status, 403);
+  assert.equal((await post({ action: 'list', payload: { uid: 'alice' } })).status, 400);
+  assert.equal((await post({}, { authorization: '' })).status, 401);
+  assert.equal((await post({ action: 'list', payload: { cursor: 'x'.repeat(40000) } })).status, 400);
+  disabled = true; assert.equal((await post()).status, 401); disabled = false; validSince = Date.now() / 1000; assert.equal((await post()).status, 401);
+  const broken = createApi({ db: { collection() { throw new Error('D1 quota secret upstream'); } }, auth: { async current() { return {}; } }, verifier: { async check() {}, async auth() { return { uid: 'quota', auth_time: Date.now() / 1000 }; } }, origin: 'https://test.invalid' });
+  const response = await broken.fetch(new Request('https://api.invalid/personalApi', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer valid' }, body: JSON.stringify({ data: { action: 'list' } }) }), { waitUntil() {} });
+  assert.equal(response.status, 503); assert.ok(!(await response.text()).includes('secret'));
+  await Promise.all(waits);
+});
+test('scheduled: retries other jobs, preserves pending and reports fixed failure without identities', async () => {
+  const jobs = ['retry-first', 'retry-second']; const receipt = ['c'.repeat(64), 'd'.repeat(64)];
+  for (let i = 0; i < jobs.length; i++) { await call(jobs[i], 'create', payload(input)); await call(jobs[i], 'startDeletion', { receipt: receipt[i] }); }
+  const attempts = [];
+  const retryAuth = { async deleteUser(uid) { attempts.push(uid); if (uid === jobs[0]) throw new Error('private identity and provider details'); } };
+  const api = createApi({ db, auth: retryAuth, verifier: {}, origin: 'https://test.invalid' });
+  await assert.rejects(api.scheduled(), { message: 'ACCOUNT_CLEANUP_PENDING' });
+  assert.deepEqual(attempts.sort(), [...jobs].sort());
+  assert.deepEqual(await service.deletionStatus({ receipt: receipt[0] }), { state: 'deleting' });
+  assert.deepEqual(await service.deletionStatus({ receipt: receipt[1] }), { state: 'deleted' });
+  await createApi({ db, auth, verifier: {}, origin: 'https://test.invalid' }).scheduled();
+  assert.deepEqual(await service.deletionStatus({ receipt: receipt[0] }), { state: 'deleted' });
+  const failedQueue = createApi({ db: { async pending() { throw new Error('private provider account details'); } }, auth, verifier: {}, origin: 'https://test.invalid' });
+  await assert.rejects(failedQueue.scheduled(), { message: 'ACCOUNT_CLEANUP_PENDING' });
+});
+test('operations: health SQL returns only read-only aggregate fields', async () => {
+  const source = await readFile(new URL('../operations/health.sql', import.meta.url), 'utf8');
+  const queries = source.replace(/^--.*$/gm, '').split(';').map(value => value.trim()).filter(Boolean);
+  const columns = [['account_state', 'accounts'], ['pending_accounts', 'oldest_request_ms', 'oldest_attempt_ms'], ['expired_metadata_rows']];
+  assert.equal(queries.length, columns.length);
+  for (let i = 0; i < queries.length; i++) {
+    assert.match(queries[i], /^SELECT\s/i); const result = await binding.prepare(queries[i]).all();
+    for (const row of result.results) assert.deepEqual(Object.keys(row).sort(), columns[i].toSorted());
+  }
+});
