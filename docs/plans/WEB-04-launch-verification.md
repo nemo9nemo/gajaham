@@ -29,4 +29,6 @@ main 병합·계정 로그인/약관 대행·운영정보 임의 기입·카드/
 
 ## 리뷰 기록
 
+원격 후속 검사에서 같은 SHA의 작업 브랜치 push/PR 중복 실행이 SUCCESS1/CANCELLED1과 PR UNSTABLE을 남기는 것을 확인했다. 검사 성공과 PR 전체 정상 상태를 구분하고 작업 브랜치 push 트리거를 제거했다. 실제 PR 변경·main push 검사는 유지하며 최종 head의 CI/PR 상태를 다시 확인한다. 기능 코드/의존성은 바꾸지 않았다. 후속 단일 실행 수정은 독립 읽기 전용 리뷰 APPROVED이며 결과는 tmp/codex/WEB-04-single-run-implementation-review.md에 기록했다.
+
 별도 읽기 전용 Codex web00_implementation_review가 workflow 권한/무료 조건·고정 SHA·무결성 검사·사용자 확인 분리를 대조해 APPROVED를 반환했다. 결과는 tmp/codex/WEB-04-implementation-review.md다. 커밋 뒤 별도 worktree에서 정확한 SHA를 main 대비 재리뷰하고 승인 장부를 따른다.

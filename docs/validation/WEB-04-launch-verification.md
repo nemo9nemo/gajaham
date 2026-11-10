@@ -13,7 +13,9 @@
 
 최초 실제 원격 검사 [run42770131814](https://github.com/nemo9nemo/gajaham/actions/runs/42770131814)는 head fffbf96bbdb2b13c29050f09d2939c6d0cc30921, pull_request 이벤트에서 **success**다. 2026-11-10 GitHub API로 전체27개를 실행하는 단계·웹/서버 audit·개발 CLI high 기준·모든 작업/post 단계 성공을 확인했다. 같은 SHA의 push run42770130612는 concurrency에 의해 cancelled됐으며 PASS로 세지 않았다. 문서 후속 커밋의 결과는 각 최종 PR Checks를 따른다.
 
-[Web checks](https://github.com/nemo9nemo/gajaham/actions/workflows/web-checks.yml)는 현재 공개 저장소의 표준 ubuntu-24.04에서 합성 데이터로 위 흐름과 audit를 실행한다. production 계정/secret·배포·artifact/cache 업로드·유료 실행기는 사용하지 않는다. 비공개/내부 저장소는 job 조건으로 건너뛴다. PR/push 중복 이벤트는 같은 소스/브랜치 기준 concurrency로 이전 실행을 취소한다. 취소된 이전 실행을 성공으로 보고하지 않는다.
+[Web checks](https://github.com/nemo9nemo/gajaham/actions/workflows/web-checks.yml)는 현재 공개 저장소의 표준 ubuntu-24.04에서 합성 데이터로 위 흐름과 audit를 실행한다. production 계정/secret·배포·artifact/cache 업로드·유료 실행기는 사용하지 않는다. 비공개/내부 저장소는 job 조건으로 건너뛴다. PR 변경과 main push에서 실행하며 연속된 브랜치 변경은 concurrency로 이전 실행을 취소한다. 취소된 이전 실행을 성공으로 보고하지 않는다.
+
+초기 구성은 작업 브랜치 push와 PR 이벤트가 같은 SHA를 중복 검사해 성공1/취소1과 PR UNSTABLE을 남겼다. 원격 검사는 성공했지만 이 상태를 전체 정상으로 보고하지 않았다. 작업 브랜치 push 트리거를 제거하고 PR당 단일 실행으로 정리했다. 최종 새 SHA의 실제 CI/PR 상태를 다시 확인하며 main push 검사는 유지한다.
 
 공식 action은 조회한 checkout v6 d23441a48e516b6c34aea4fa41551a30e30af803 및 setup-node v6 249970729cb0ef3589644e2896645e5dc5ba9c38로 고정했다. credentials 비영속·contents 읽기만 허용한다. 실행 시간20분 상한, npm lifecycle scripts 비활성화, Chromium 설치, 원격 서비스 변경 없는 Emulator/로컬D1/dry-run 검사를 사용한다.
 
