@@ -1,6 +1,6 @@
 # WEB-04 · 사용자 확인 분리와 출시 검증 자동화
 
-- 상태: IN_REVIEW · 2026-11-10 사용자 “남은 항목과 지금 반드시 확인할 항목 정리, 나머지는 전부 수행”
+- 상태: DONE · 2026-11-10 사용자 “남은 항목과 지금 반드시 확인할 항목 정리, 나머지는 전부 수행”
 - 브랜치: 기존 codex/WEB-03-release-preparation에서 출시 준비를 이어간다. 승인24541a5 기준, 통합 PR #3을 유지하고 추가 이력 PR은 만들지 않는다.
 
 ## 목표·범위
@@ -25,7 +25,7 @@ main 병합·계정 로그인/약관 대행·운영정보 임의 기입·카드/
 - 로컬: 전체27개·production2HTML/보안 헤더 설정·Emulator 제외·Worker dry-run PASS. 변조/다른프로젝트/목록공격·추가/누락/원복 시나리오를 출시 검사에 추가했다. 실제 CLI에서13파일/hash 대조 PASS·operatingChecksPassed=false 유지. YAML 구문/권한/실행기·단계 파싱 PASS. 새 패키지 없음.
 - 취약점: app-web/worker audit 각0. 개발 Emulator CLI high 이상 검사 exit0, moderate14는 기존 로컬/가상/고정명령 격리 유지. 문서10개 상대 링크60개·공백 검사 PASS.
 - 연결 현황: 운영 공개 설정/연결 파일 없음. 이메일/토큰을 출력하지 않은 공식 Firebase CLI 계정수0, Cloudflare whoami 상태false 확인. 실제 소유 계정/무료·결제 미연결/운영정보·secret/CPU/실메일/Galaxy·공개 배포는 미실행이다.
-- 원격 자동검사는 승인된 SHA push 뒤 실제 Actions 결과를 확인한다. 최종 실제 run URL/결과는 PR 리뷰/실행 보고에 기록하며 로컬 성공을 원격 PASS로 대신하지 않는다.
+- 원격 자동검사: 승인fffbf96bbdb2b13c29050f09d2939c6d0cc30921을 기존 PR #3에 push한 뒤 GitHub Actions run42770131814(pull_request)의 모든 단계 success를 확인했다. 전체 검사·웹/Worker audit·개발 CLI high 기준이 원격에서도 통과했다. 같은 SHA의 push run42770130612는 concurrency로 취소됐으며 성공으로 세지 않았다. 문서에 실제 run 링크를 기록했다. 이후 문서 변경의 최종 원격 상태는 PR Checks 결과로 별도 확인한다.
 
 ## 리뷰 기록
 
