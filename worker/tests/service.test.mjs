@@ -87,3 +87,28 @@ test('HTTP: quota errors stay unavailable; strict CORS, body bounds, auth, revok
   assert.equal(response.status, 503); assert.ok(!(await response.text()).includes('secret'));
   await Promise.all(waits);
 });
+test('scheduled: retries other jobs, preserves pending and reports fixed failure without identities', async () => {
+  const jobs = ['retry-first', 'retry-second']; const receipt = ['c'.repeat(64), 'd'.repeat(64)];
+  for (let i = 0; i < jobs.length; i++) { await call(jobs[i], 'create', payload(input)); await call(jobs[i], 'startDeletion', { receipt: receipt[i] }); }
+  const attempts = [];
+  const retryAuth = { async deleteUser(uid) { attempts.push(uid); if (uid === jobs[0]) throw new Error('private identity and provider details'); } };
+  const api = createApi({ db, auth: retryAuth, verifier: {}, origin: 'https://test.invalid' });
+  await assert.rejects(api.scheduled(), { message: 'ACCOUNT_CLEANUP_PENDING' });
+  assert.deepEqual(attempts.sort(), [...jobs].sort());
+  assert.deepEqual(await service.deletionStatus({ receipt: receipt[0] }), { state: 'deleting' });
+  assert.deepEqual(await service.deletionStatus({ receipt: receipt[1] }), { state: 'deleted' });
+  await createApi({ db, auth, verifier: {}, origin: 'https://test.invalid' }).scheduled();
+  assert.deepEqual(await service.deletionStatus({ receipt: receipt[0] }), { state: 'deleted' });
+  const failedQueue = createApi({ db: { async pending() { throw new Error('private provider account details'); } }, auth, verifier: {}, origin: 'https://test.invalid' });
+  await assert.rejects(failedQueue.scheduled(), { message: 'ACCOUNT_CLEANUP_PENDING' });
+});
+test('operations: health SQL returns only read-only aggregate fields', async () => {
+  const source = await readFile(new URL('../operations/health.sql', import.meta.url), 'utf8');
+  const queries = source.replace(/^--.*$/gm, '').split(';').map(value => value.trim()).filter(Boolean);
+  const columns = [['account_state', 'accounts'], ['pending_accounts', 'oldest_request_ms', 'oldest_attempt_ms'], ['expired_metadata_rows']];
+  assert.equal(queries.length, columns.length);
+  for (let i = 0; i < queries.length; i++) {
+    assert.match(queries[i], /^SELECT\s/i); const result = await binding.prepare(queries[i]).all();
+    for (const row of result.results) assert.deepEqual(Object.keys(row).sort(), columns[i].toSorted());
+  }
+});

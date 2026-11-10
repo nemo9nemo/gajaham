@@ -1,3 +1,4 @@
+import { privacyContent } from './privacy-content.mjs';
 import './style.css';
 import { CATEGORIES, escaped as e, editableInput as normalizeInput, normalizeUrl } from './domain.mjs';
 import * as gateway from './gateway.mjs';
@@ -137,9 +138,7 @@ function settingsDialog() {
     <hr>${button('trash-tab', '휴지통 보기', 'settings-link')}${button('privacy', '저장과 개인정보 안내', 'settings-link')}<p class="form-footnote">현재는 개인 보관함을 제공해요. 링크의 장소는 직접 확인해 주세요.</p>`, 'settings');
 }
 function privacyDialog() {
-  const contact = gateway.publicConfig.contact;
-  const contactUrl = /^https:\/\/[^\s]+$/.test(contact) ? contact : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact) ? `mailto:${contact}` : '';
-  openDialog('저장과 개인정보 안내', `<div class="privacy-copy"><h3>나의 기록은 나만 봐요</h3><p>로그인한 기록은 Cloudflare의 계정별 서버 영역에 보관해요. 이메일과 비밀번호 인증은 Firebase Authentication이 처리하고 비밀번호를 별도로 보관하지 않아요.</p><h3>로그인 없이 이용할 때</h3><p>기록은 현재 브라우저의 저장소에만 남아요. 사이트 데이터를 지우거나 브라우저를 바꾸면 이어서 볼 수 없어요. 계정에 옮기는 것은 직접 선택해요.</p><h3>삭제와 탈퇴</h3><p>기록은 휴지통에서 30일 이내 복원할 수 있어요. 이후 다음 접속 때 정리해요. 영구 삭제한 원문은 지우고, 오래된 저장 재시도로 되살아나지 않도록 무작위 요청 ID만 계정 탈퇴까지 남겨요. 브라우저의 같은 최소 정보는 사이트 데이터 삭제 때 정리돼요. 탈퇴 요청은 서버 기록과 인증 계정을 정리하며, 처리 중에는 새 저장을 중지해요. 처리 확인을 위한 최소 상태는 7일, 호출 제한 정보는 2일 후 정리 대상으로 두어요. 현재 DB에서 삭제한 뒤에도 공급자의 자동 복구 이력에는 최대 7일간 남을 수 있어요.</p><h3>현재 사용하는 연결</h3><p>계정 인증에는 Google Firebase, 서버 기록에는 Cloudflare, 남용 방지에는 App Check를 사용해요. 외부 지도와 원본은 링크를 눌렀을 때 열려요. 현재 광고·자동 분석·상대방 공유는 제공하지 않아요.</p>${contactUrl ? `<h3>문의</h3><a class="external-link" href="${e(contactUrl)}" rel="noopener noreferrer">${e(contact)}</a>` : '<p>공개 운영 전 문의 창구와 처리방침을 등록할 예정이에요.</p>'}</div>`, 'privacy');
+  openDialog('저장과 개인정보 안내', `<div class="privacy-copy">${privacyContent(gateway.publicConfig)}<p><a class="external-link" href="/privacy/" target="_blank" rel="noopener noreferrer">별도 페이지에서 개인정보와 탈퇴 안내 보기</a></p></div>`, 'privacy');
 }
 async function transfer() {
   const target = snapshot(); if (target.owner === 'guest') return;

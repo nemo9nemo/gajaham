@@ -20,10 +20,10 @@ try {
     for (let i = 0; i < 90; i++) { if ((await Promise.all([9199, 8787].map(listening))).every(Boolean)) break; if (children.some(child => child.exitCode !== null)) throw new Error('Local startup failed; check CLI dependencies and ports.'); await new Promise(r => setTimeout(r, 1000)); }
   }
   if (!(await Promise.all([9199, 8787].map(listening))).every(Boolean)) throw new Error('WEB-02 demo suite unavailable.');
-  await run(['--test', 'tests/unit.test.mjs'], root + 'app-web');
+  await run(['--test', 'tests/unit.test.mjs', 'tests/release.test.mjs'], root + 'app-web');
   await run(['--test', 'tests/auth.test.mjs', 'tests/service.test.mjs'], root + 'worker');
   await run(['node_modules/@playwright/test/cli.js', 'test'], root + 'app-web');
   await run(['app-web/scripts/check-production.mjs']);
   await run(['node_modules/wrangler/bin/wrangler.js', 'deploy', '--dry-run', '--outdir', 'dist'], root + 'worker');
-  console.log('WEB-02 local checks passed. Free plan/production CPU and Galaxy checks remain separate. No deployment.');
+  console.log('WEB-03 local checks passed. Free plan/production CPU and Galaxy checks remain separate. No deployment.');
 } catch (error) { console.error(error.message); process.exitCode = 1; } finally { stop(); }

@@ -4,12 +4,15 @@ Codex가 기획·구현·검증·독립 리뷰를 진행하는 작업 단위 브
 
 ## 현재 출시 방향: 웹앱
 
+2026-11-10 사용자 확인 전 가능한 출시 준비는 [WEB-03](WEB-03-release-preparation.md)과 [최신 상태표](../release/WEB-03-readiness.md)를 따른다. 운영 정보/계정 없이 마친 일과 계정 연결 후 Codex가 이어서 할 일을 구분한다.
+
 2026-11-09 사용자 요구로 **결제수단·Blaze·초과 자동과금 없는 구성**으로 변경했다. 현재 기준은 [WEB-02](WEB-02-no-billing.md), [결정0010](../decisions/0010-no-billing-web-backend.md), [실제 사용 조사와 출시 잔여 표](../research/no-billing-stack-2026-11-09.md)다. Firebase Auth/Hosting Spark + Cloudflare Workers/D1 Free를 사용하며 무료 초과 시 실패/제한을 허용한다. 아래 WEB-01의 Blaze/예산/Functions 설명은 이력이다.
 
 2026-11-03 사용자 요구는 설치가 필요 없는 URL 접속 웹앱과 **로그인하면 어디서든 같은 계정의 개인 기록 조회**다. [결정 0008](../decisions/0008-account-cloud-records.md)·[계정 계약](../contracts/web-account-data.md)을 우선하며 게스트만 로컬 전용이다. 운영 계정/도메인 보유는 가정하지 않고 최소 비용을 검토한다. 아래 Android/목업 검사·정책 문서 완료는 실제 웹/서버 원본의 완료가 아니다.
 
 | 작업 | 범위 | 상태 |
 | --- | --- | --- |
+| [WEB-03](WEB-03-release-preparation.md) | 공개 설정/미배포 번들·개인정보 URL·Cron/집계·운영 절차·보안 | 로컬 검사/독립 리뷰, 최신 결과는 브리프/검사 기록. 운영 계정/실기기/공개 배포 미실행 |
 | [WEB-02](WEB-02-no-billing.md) | 결제 미연결 정책·실사용 조사·Workers/D1 Free 서버·보안·탈퇴 이전 | 로컬20개·production/Worker dry-run·audit0·구현 리뷰 APPROVED. 운영 Free/CPU/실메일/Galaxy/배포 미실행 · 정확한 SHA는 별도 장부 |
 | [WEB-00](WEB-00-webapp-transition.md) | 전환 결정·잔여 작업·무료 주소/최소 비용·후속 검증 | DONE · 문서/회귀164개/58화면/상대 링크91개·독립 구현 리뷰 통과. 실제 웹앱 기능·운영 설정·공개 배포 미착수 · SHA 판정은 별도 장부 |
 | [RES-01](RES-01-server-personal-data-research.md) | 출시 서버·개인별 저장의 실제 사례/권한/비용·정책 선택 조사 | DONE · 당시 문서5개/상대 링크26개·가상 산술PASS·독립 리뷰 통과. 조사 후 계정 서버 원본 선택은 AUTH-03, 실제 서비스는 미구현 · SHA 판정은 별도 장부 |

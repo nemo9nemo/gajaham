@@ -2,9 +2,11 @@ import { readFile, readdir } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
+import { toEnv } from './release-config.mjs';
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const result = spawnSync(process.execPath, ['node_modules/vite/bin/vite.js', 'build'], { cwd: root + 'app-web', env: { ...process.env, GAJAHAM_API_KEY: 'public-test-api-key', GAJAHAM_PROJECT_ID: 'gajaham-production-check', GAJAHAM_AUTH_DOMAIN: 'gajaham-production-check.firebaseapp.com', GAJAHAM_APP_ID: 'public-test-app-id', GAJAHAM_APP_CHECK_KEY: 'public-test-site-key', GAJAHAM_ORIGIN: 'https://gajaham-production-check.web.app', GAJAHAM_CONTACT: '' }, stdio: 'inherit' });
+const result = spawnSync(process.execPath, ['node_modules/vite/bin/vite.js', 'build'], { cwd: root + 'app-web', env: { ...process.env, ...toEnv({ apiKey: 'public-test-api-key', projectId: 'gajaham-production-check', authDomain: 'gajaham-production-check.firebaseapp.com', appId: 'public-test-app-id', appCheckKey: 'public-test-site-key', origin: 'https://gajaham-production-check.web.app', apiOrigin: 'https://gajaham-production-check.fixture.workers.dev' }) }, stdio: 'inherit' });
 assert.equal(result.status, 0);
+assert.ok((await readFile(root + 'app-web/dist/privacy/index.html', 'utf8')).includes('개인정보와 탈퇴 안내'));
 for (const file of await readdir(root + 'app-web/dist/assets')) {
   assert.ok(!file.endsWith('.map'));
   const contents = await readFile(root + 'app-web/dist/assets/' + file, 'utf8');

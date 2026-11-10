@@ -1,5 +1,7 @@
 # 개인 기록 API · Workers/D1 Free
 
+WEB-03은 Cron 실패를 고정 ACCOUNT_CLEANUP_PENDING으로 식별하고 다른 작업을 계속 처리한다. pending은 지우지 않으며 재시도한다. operations/health.sql은 개인정보 없는 집계만 조회한다. 현재 배포/키/장애 점검 절차는 [운영 문서](../docs/release/WEB-03-operator-runbook.md), 사용자 확인 전 완료/남은 항목은 [상태표](../docs/release/WEB-03-readiness.md)를 따른다.
+
 Firebase Auth/Hosting Spark와 함께 사용하는 WEB-02 서버다. 결제수단·Workers Paid·Cloud Billing을 연결하지 않는다. 계정별 원본은 D1에만 두고 브라우저가 DB를 직접 열지 않는다. [웹앱 실행](../app-web/README.md), [비용 조사](../docs/research/no-billing-stack-2026-11-09.md), [결정0010](../docs/decisions/0010-no-billing-web-backend.md)을 따른다.
 
 ## 운영 설정

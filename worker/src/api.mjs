@@ -42,6 +42,16 @@ export function createApi({ db, auth, verifier, origin }) {
         return respond({ error: { status: code.toUpperCase().replaceAll('-', '_'), message: known ? error.message : '연결을 확인한 뒤 다시 시도해 주세요.', ...(known && error.details ? { details: error.details } : {}) } }, statuses[code] ?? 503);
       }
     },
-    async scheduled() { for (const uid of await db.pending()) { await db.markAttempt(uid); await finish(uid); } await db.expired(Date.now()); }
+    async scheduled() {
+      let incomplete = false;
+      let pending; try { pending = await db.pending(); } catch { throw new Error('ACCOUNT_CLEANUP_PENDING'); }
+      // Continue other jobs when one provider/DB operation fails. A fixed error
+      // marks the scheduled event as failed without logging identity or content.
+      for (const uid of pending) {
+        try { await db.markAttempt(uid); await service.finishDeletion(uid); } catch { incomplete = true; }
+      }
+      try { await db.expired(Date.now()); } catch { incomplete = true; }
+      if (incomplete) throw new Error('ACCOUNT_CLEANUP_PENDING');
+    }
   };
 }

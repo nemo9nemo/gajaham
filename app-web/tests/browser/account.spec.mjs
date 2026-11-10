@@ -3,6 +3,17 @@ const password = 'LocalOnlyTestPassword123';
 const apiUrl = 'http://127.0.0.1:8787/personalApi';
 const authUrl = 'http://127.0.0.1:9199/identitytoolkit.googleapis.com/v1/accounts:';
 const email = () => `emulator-${crypto.randomUUID()}@example.invalid`;
+test('public privacy/deletion page needs no login, exposes draft state and renders without horizontal overflow', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } }); const page = await context.newPage(); const external = [];
+  page.on('request', request => { if (!request.url().startsWith('http://127.0.0.1:5183') && !request.url().startsWith('ws://127.0.0.1:5183')) external.push('external request'); });
+  await page.goto('/privacy/'); await expect(page.getByRole('heading', { level: 1 })).toHaveText('개인정보와 탈퇴 안내');
+  await expect(page.getByRole('status')).toContainText('안내 초안');
+  await expect(page.getByRole('heading', { name: '삭제·탈퇴와 보존' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true); expect(external).toEqual([]);
+  await page.screenshot({ path: '../tmp/codex/WEB-03-privacy-mobile.png', fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 960 }); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await context.close();
+});
 async function auth(page, address, kind = 'login', empty = true) {
   await page.getByRole('button', { name: '로그인하기 →' }).click();
   if (kind === 'signup') await page.getByRole('button', { name: '처음이신가요? 가입하기' }).click();
