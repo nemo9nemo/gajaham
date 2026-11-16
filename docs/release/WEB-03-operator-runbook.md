@@ -12,7 +12,7 @@
 | 메일 | 소유 테스트 메일함 확인/확인 링크 이용 | 가입·재설정·열거 보호·Auth/App Check·실제 REST 인가 확인 |
 | Galaxy | Samsung Internet/Chrome에서 기기 조작·관찰 협조 | 같은 계정 기록·수정 충돌·삭제·화면/네트워크 검사 기록 |
 
-실제 소유 계정/프로젝트/배포 주소/관리 자격증명이 현재 없다. 이를 대신 만들어 채우지 않았다. 준비한 공개 처리 안내가 실제 계정·제공자 처리와 일치하는지는 운영 전 확정한다. 계정 연결 후 가능한 설정·자동 검사는 Codex가 수행하며 표 전체를 사용자 수동 작업으로 넘기지 않는다.
+2026-11-13 Firebase Spark 프로젝트·웹앱/기본 Hosting 연결·이메일 인증 초기 설정은 진행했다. [WEB-05 검사 기록](../validation/WEB-05-production-auth-readiness.md)을 따른다. Cloudflare 이메일 인증·D1/Worker·App Check/관리 자격증명·실제 배포는 아직 완료하지 않았다. 준비한 공개 처리 안내가 실제 계정·제공자 처리와 일치하는지는 운영 전 확정한다. 계정 연결 후 가능한 설정·자동 검사는 Codex가 수행하며 표 전체를 사용자 수동 작업으로 넘기지 않는다.
 
 ## 공개 설정을 한 번 입력
 
@@ -47,7 +47,7 @@ node app-web/scripts/verify-release.mjs tmp/release/생성폴더 보관한64자�
 ## 원격 설정/배포 순서 · 미실행
 
 1. 사용자 확인 뒤 Spark·Workers Free와 결제 미연결을 재확인한다. Cloudflare의 웹사이트 Free와 Workers 요금제를 구분한다. 사용자 소유 무료 D1 DB 하나를 연결하고 실제 데이터 위치·국외 처리 안내를 맞춘다. 새로운 유료 상품이나 read replication을 켜지 않는다.
-2. Firebase 이메일/비밀번호·열거 보호·12자 영문/숫자·정식 auth 도메인을 설정한다. reCAPTCHA Enterprise/App Check는 Spark로 등록한다. debug/Emulator 우회는 운영에 등록하지 않는다.
+2. Firebase 이메일/비밀번호·이메일 열거 보호·소문자/숫자 포함12~128자 필수 시행·정식 auth 도메인만 설정한다. 사용자 직접 Auth 삭제를 꺼서 서버 원본 정리 뒤 관리자 경로가 인증 계정을 지우게 한다. 운영 도메인에 localhost를 두지 않는다. reCAPTCHA Enterprise/App Check는 Spark로 등록한다. debug/Emulator 우회는 운영에 등록하지 않는다.
 3. Auth 최신 사용자 조회/삭제에 필요한 최소권한만 갖춘 전용 서비스 계정의 자격증명을 Worker secret FIREBASE_ADMIN_CREDENTIALS로 등록한다. 일반 Owner/Editor 키를 쓰지 않고 로그/대화/Git/프론트 설정/번들에 넣지 않는다. 운영 secret 생성·등록은 이번에 실행하지 않았다.
 4. 검토한 번들의 D1 migration만 해당 **정확한 DB**에 적용하고 Worker/Cron을 연결한다. 계정·DB·region·secret 입력을 전부 로그로 덤프하지 않는다. CLI에 --remote를 쓰는 작업은 실제 원격 변경이므로 이름/ID를 확인한 뒤 수행한다.
 5. Firebase Hosting에 올리기 전 production 번들/headers·/privacy/ 안내와 기본 URL·API origin을 확인한다. 프로젝트 루트의 가상 dist나 가상 fixture 산출물을 배포하지 않는다.

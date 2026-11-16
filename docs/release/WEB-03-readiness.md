@@ -1,6 +1,8 @@
 # 가자함 · 현재 출시 준비 상태
 
-2026-11-10 · [WEB-03 브리프](../plans/WEB-03-release-preparation.md) · [검사 증거](../validation/WEB-03-release-preparation.md)
+2026-11-13 · [WEB-03 브리프](../plans/WEB-03-release-preparation.md) · [로컬 검사 증거](../validation/WEB-03-release-preparation.md) · [실제 인증 초기 설정](../validation/WEB-05-production-auth-readiness.md)
+
+PR #3은 사용자 지시로 병합했고 main 자동 검사도 성공했다. Firebase Spark 프로젝트·웹앱/기본 Hosting 연결·이메일/비밀번호 제공자·비밀번호 필수 정책·열거 보호·직접 Auth 삭제 차단을 확인했다. 실제 서비스는 아직 배포하지 않았다. Cloudflare 로그인과 이메일 인증 완료는 다르며 현재 인증 메일 확인과 App Check용 Google Cloud 추가 약관의 명시 확인이 남아 있다.
 
 현재는 장소 링크·메모를 보관하는 개인 웹앱이다. 로그인하면 지원 기기/브라우저에서 계정 원본을 재조회한다. 실제 지도·상대 연결·공유·DM·자동 분석·광고는 아직 없으며 출시했다고 소개하지 않는다. 설치/도메인 구매·Blaze/결제 연결은 이용·개발 선행 조건이 아니다.
 
@@ -32,6 +34,6 @@
 
 ## 계정 연결 후 Codex가 이어서 할 작업
 
-무료 D1/Worker/Auth·App Check와 기본 주소 설정, secret 최소권한 연결, 실제 Free CPU10ms·DB 호출/저장 한도·메일·보안 헤더·Cron/삭제 재시도 검증, 실제 배포와 운영 URL의 두 브라우저 검사는 **연결 정보 부재로 미실행**이다. 이 작업을 사용자에게 수동 구현/명령 실행으로 넘기지 않았다. 실제 운영 정보가 준비되면 같은 무료 정책 안에서 이어서 진행한다.
+Firebase 프로젝트/웹앱·이메일 인증의 초기 설정을 진행한 뒤, 무료 D1/Worker·App Check·secret 최소권한 연결, 실제 Free CPU10ms·DB 호출/저장 한도·메일·보안 헤더·Cron/삭제 재시도 검증, 실제 배포와 운영 URL의 두 브라우저 검사는 **미완료**다. Cloudflare 이메일 인증과 공개 운영정보가 남아 있다. 이 작업을 사용자에게 수동 구현/명령 실행으로 넘기지 않았다. 확인된 설정과 아직 실행하지 않은 검사는 WEB-05 기록으로 구분한다.
 
 가상 설정으로 생성한 fixture 번들은 배포용이 아니다. 운영 계정·실제 문의처·개인정보 확정이 없는 상태에서 공개 출시 완료로 표시하지 않는다. [실제 사용/비용 조사](../research/no-billing-stack-2026-11-09.md)와 [개인정보 확정 항목](WEB-03-privacy-draft.md)을 함께 따른다.

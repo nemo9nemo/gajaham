@@ -6,19 +6,19 @@
 
 최신 통합 대상은 `codex/WEB-03-release-preparation`이다. 코드·개인정보 초안·출시 도구·운영 절차와 이전 구현 이력을 포함한다. 이전 브랜치도 버전 이력 보관용으로 전송하되, 이전 단계 정책/코드를 따로 병합해 최신 웹 정책을 되돌리지 않는다. 이전 작업 브랜치는 원격에 보관하고, 추가 이력 PR을 여러 개 만들지 않고 최신 통합 PR 하나를 검토한다. UI-02의 별도 커밋 이력도 보존한다.
 
-원격 main은 기존 기준점이며, 사용자가 PR을 검토해 병합하기 전에는 직접 갱신하지 않는다. 로컬 리뷰 기록과 push한 정확한 SHA가 일치하는지 확인하고 통합 PR의 독립 리뷰 결과를 남긴다. 최종 PR 주소·push/리뷰 완료 여부는 실제 원격 결과로 보고하며 미실행을 완료로 표시하지 않는다.
+[통합 PR #3](https://github.com/nemo9nemo/gajaham/pull/3)은 사용자 지시로 병합 완료했다. [병합 main 자동 검사](https://github.com/nemo9nemo/gajaham/actions/runs/42838162742)도 성공했다. 이후 소스 변경은 별도 작업 브랜치·독립 리뷰·PR 절차를 따른다. 실제 배포/운영 검사는 소스 병합과 구분한다.
 
 ## 실행 순서
 
-사용자 관점의 현재 필수 확인은 [지금 할 일 세 가지](USER-NEXT-STEPS.md)로 모았습니다. 실제 메일·Galaxy 검사는 서버 연결 뒤 진행합니다. 아래 기술 설정·문안/JSON 작성·배포 명령은 Codex 담당이며 사용자는 소유권·공개 정보와 실제 기기에서만 가능한 확인을 맡습니다.
+사용자 관점의 현재 필수 확인은 [지금 할 일 두 가지](USER-NEXT-STEPS.md)로 모았습니다. 실제 메일·Galaxy 검사는 서버 연결 뒤 진행합니다. 아래 기술 설정·문안/JSON 작성·배포 명령은 Codex 담당이며 사용자는 소유권·공개 정보와 실제 기기에서만 가능한 확인을 맡습니다. 2026-11-13의 실제 설정은 [WEB-05 검사 기록](../validation/WEB-05-production-auth-readiness.md)을 따릅니다.
 
 | 순서 | 완료 조건 | 담당 | 현재 상태 |
 |---|---|---|---|
-| 0 | 최신 통합 PR의 코드/검사/한계 확인 후 main 병합 | 사용자 검토·병합 | 소스 전달과 별개, 병합 대기 |
-| 1 | Google·Cloudflare 소유 계정 로그인/본인·약관 확인 | 사용자 | 확인 필요 |
-| 2 | Firebase Spark·Workers Free, 결제수단/유료 구독/Cloud Billing 미연결 확인 | 사용자 확인 + Codex 설정 지원 | 실제 운영 상태 미확인 |
+| 0 | 최신 통합 PR의 코드/검사/한계 확인 후 main 병합 | 사용자 요청·Codex 병합 | PR #3 병합·main 검사 완료 |
+| 1 | Google·Cloudflare 소유 계정 로그인/본인·약관 확인 | 사용자 | 로그인/Firebase 동의 확인, Cloudflare 이메일 인증·App Check 추가 약관 대기 |
+| 2 | Firebase Spark·Workers Free, 결제수단/유료 구독/Cloud Billing 미연결 확인 | 사용자 확인 + Codex 설정 지원 | Firebase Spark 확인, Cloudflare Free/결제수단 없음 확인과 실제 사용량 검사는 구분 |
 | 3 | 공개 운영자·문의 이메일/URL·시행일·실제 처리/국외 이전 안내 확정 | 사용자 확정 + Codex 문안 반영 | 미확정 |
-| 4 | 무료 D1·Auth·App Check·최소권한 secret·기본 web.app/workers.dev 주소 연결 | Codex, 사용자 계정 접근 후 | 미실행 |
+| 4 | 무료 D1·Auth·App Check·최소권한 secret·기본 web.app/workers.dev 주소 연결 | Codex, 사용자 계정 접근 후 | Firebase 프로젝트·웹앱/Hosting 연결·이메일 인증 초기 설정 진행, 나머지 미완료 |
 | 5 | 실제 공개 설정 교차 검사와 새로운 출시 번들·SHA256 목록 생성 | Codex | 도구/가상 검사 완료, 실제 번들 미생성 |
 | 6 | 실제 Free 런타임에서 CPU10ms·DB호출/사용량·JWT/App Check·회수·메일·삭제/Cron 검사 | Codex, 메일함 확인은 사용자 협조 | 미실행 |
 | 7 | Galaxy Samsung Internet/Chrome·두 브라우저에서 로그인/기록/충돌/탈퇴 확인 | 사용자 실기기 협조 + Codex | 미실행 |
