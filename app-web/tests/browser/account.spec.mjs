@@ -14,6 +14,28 @@ test('public privacy/deletion page needs no login, exposes draft state and rende
   await page.setViewportSize({ width: 1440, height: 960 }); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await context.close();
 });
+test('signup rejects missing lowercase or digit before contacting Auth, clears passwords, and accepts the minimum valid password', async ({ page }) => {
+  const signupRequests = [];
+  page.on('request', request => { if (request.url().startsWith(authUrl + 'signUp?')) signupRequests.push('signup'); });
+  await page.goto('/');
+  await page.getByRole('button', { name: '로그인하기 →' }).click();
+  await page.getByRole('button', { name: '처음이신가요? 가입하기' }).click();
+  await page.getByLabel('이메일', { exact: true }).fill(email());
+  const passwordField = page.getByLabel('비밀번호', { exact: true });
+  for (const invalid of ['onlylowercaseletters', '123456789012', 'UPPERCASE1234']) {
+    await passwordField.fill(invalid);
+    await page.getByRole('dialog').getByRole('button', { name: '이메일로 시작하기', exact: true }).click();
+    await expect(page.locator('.form-error')).toContainText('영문 소문자와 숫자');
+    await expect(passwordField).toHaveValue('');
+  }
+  expect(signupRequests).toEqual([]);
+  await passwordField.fill('lowercase123');
+  await page.getByRole('dialog').getByRole('button', { name: '이메일로 시작하기', exact: true }).click();
+  await expect(page.locator('.account-pill')).toContainText('계정에 보관 중');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(signupRequests).toEqual(['signup']);
+});
+
 async function auth(page, address, kind = 'login', empty = true) {
   await page.getByRole('button', { name: '로그인하기 →' }).click();
   if (kind === 'signup') await page.getByRole('button', { name: '처음이신가요? 가입하기' }).click();
