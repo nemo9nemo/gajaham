@@ -22,6 +22,7 @@
 1. [최종 런칭 체크리스트](docs/release/FINAL-LAUNCH-CHECKLIST.md): 병합·계정 확인부터 실제 배포/검증까지의 순서와 담당
 2. [현재 완료/잔여 상태표](docs/release/WEB-03-readiness.md), [배포·운영 절차](docs/release/WEB-03-operator-runbook.md)
 3. [최신 검사 증거](docs/validation/WEB-03-release-preparation.md), [개인정보 확정 항목](docs/release/WEB-03-privacy-draft.md)
+4. [웹앱 출시 분석과 개선 관리](docs/research/webapp-release-review-2026-11-17.md): 출시 조건·사용 흐름·후속 기능을 L/U/F ID로 추적하는 지속 관리 문서. 항목별 진행과 근거를 갱신하며 제품 정책·운영 검사 기록과 구분합니다.
 
 ## 코드와 로컬 실행
 
