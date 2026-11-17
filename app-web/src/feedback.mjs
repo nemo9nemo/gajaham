@@ -1,4 +1,4 @@
-export const errorCode = error => String(error?.code ?? '').replace(/^auth\//, '');
+export const errorCode = error => ['AbortError', 'TimeoutError', 'NetworkError'].includes(error?.name) ? 'unavailable' : String(error?.code ?? '').replace(/^auth\//, '');
 export function errorMessage(error) {
   const code = errorCode(error);
   const reasons = {

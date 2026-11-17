@@ -35,6 +35,13 @@ test('transfer: stop awaits the in-flight acknowledgement; changed sessions neit
   assert.equal((await transferRows(setup)).attempted, 0);
 });
 
+test('transfer: numeric DOMException timeout/network errors stop after two attempts and preserve every original', async () => {
+  for (const name of ['AbortError', 'TimeoutError', 'NetworkError']) {
+    let calls = 0; const setup = options(rows(150)); setup.create = async () => { calls++; throw new DOMException('Synthetic transport failure', name); }; setup.remove = async () => assert.fail('Timed-out requests must preserve originals');
+    const result = await transferRows(setup); assert.equal(calls, 2); assert.equal(result.paused, true); assert.equal(result.failed, 2); assert.equal(result.attempted, 2);
+  }
+});
+
 test('transfer: confirmed duplicates are retained and skipped on resume, lost responses reuse the same ID', async () => {
   const data = rows(3); const setup = options(data); const calls = [];
   setup.create = async (_uid, payload) => { calls.push(payload.requestId); if (payload.requestId === data[0].id) return { duplicate: true }; throw Object.assign(new Error(), { code: 'unavailable' }); };

@@ -1,6 +1,6 @@
 # WEB-06 개인 보관함 사용 흐름 보완
 
-- 상태: DONE · 구현/로컬 검증/독립 구현 리뷰 완료. 운영/실기기 검사는 별도
+- 상태: DONE · 구현/로컬48개 검사/독립 수정본 리뷰 완료. 고정 SHA 판정은 별도 장부, 운영/실기기 검사는 별도
 - 작성: Codex / 2026-11-17 (한국 시간)
 - 구현 브랜치: `codex/WEB-06-personal-beta-flow`
 - 요청: 관리 문서를 토대로 수정 진행. 사용자의 명시적 구현 요청으로 아래 범위를 진행한다.
@@ -46,7 +46,7 @@
 ## Codex 구현 보고
 
 - 변경 파일: `app-web/src/main.mjs`·`gateway.mjs`·`guest.mjs`·`style.css`, 새 `feedback.mjs`·`transfer.mjs`, 웹 검사 명령/패키지 scripts와 단위·브라우저 회귀, `worker/src/service.mjs`·집계 SQL·D1/API 검사. 문서는 계정 계약·관리 문서·본 브리프/검증 기록·브리프 목록·README/AGENTS·기획/과거 로드맵/최종 체크리스트/운영 절차를 함께 갱신했다. 의존성 버전·lockfile·migration은 바꾸지 않았다.
-- `node app-web/scripts/check.mjs`(전용 Node22.23.4·Chromium 캐시): **46 PASS**(단위/출시13·JWT/D1/API11·브라우저/HTTP22), production 번들 두 HTML·헤더 구성·Emulator 제외·Worker dry-run PASS. 최종 로그 `tmp/codex/WEB-06-check-final-reviewed.log`. 로컬 가상 데이터만 사용하고 자신이 실행한 Emulator/Worker는 종료했다. 이후 게스트/계정 공통 누적 한도 안내의 '계정' 한 단어를 중립 문구로 고쳤고 `--check`·`node app-web/scripts/check-production.mjs`를 재확인했다(`tmp/codex/WEB-06-production-final.log`).
+- `node app-web/scripts/check.mjs`(전용 Node22.23.4·Chromium 캐시): **48 PASS**(단위/출시14·JWT/D1/API11·브라우저/HTTP23), production 번들 두 HTML·헤더 구성·Emulator 제외·Worker dry-run PASS. 최종 로그 `tmp/codex/WEB-06-check-sha-fixes.log`. 로컬 가상 데이터만 사용하고 자신이 실행한 Emulator/Worker는 종료했다. 이전46 PASS·문구 수정 뒤 production 확인 기록은 이력으로 유지한다.
 - 웹/Worker audit 각각0. 로그 `tmp/codex/WEB-06-audit-web.json`·`WEB-06-audit-worker.json`.
 - 모바일 목록/대화상자 화면을 시각 확인했다. 합성 목록 2500건의 직렬화 기록1769170bytes·목록13회·첫 카드 DOM50을 확인했다. 실제 로컬 D1 201건200+1 페이지도 통과했다. 시간 등 상세 수치와 합성/실제 로컬 경계는 검증 기록을 따른다.
 - 문서13개·상대 링크147개·인코딩/개행/공백과 `git diff --check` PASS. 도구는 Git 제외 `tmp/codex/WEB-06-doc-check.mjs`다.
@@ -60,3 +60,5 @@
 - r2: **WARNING**, r1은 해소됐고 복원 성공 뒤 후속 list 실패 시 비교 창/초안이 사라지는 P2 지적1건. 실제 경로를 확인해 커밋 응답의 기록/버전을 즉시 적용하고 비교 창을 유지하도록 고쳤다. 게스트 mutate도 트랜잭션 커밋 확인 후 같은 기록 응답을 돌려준다. 조회503 중에도 복원 초안 유지·명시 저장이 되는 회귀를 추가해 전체46개가 통과했다. 명시 버리기는 메모 폼도 기존 값으로 돌리고, 미저장 입력이 있는 영구 삭제는 입력 폐기도 함께 확인한다.
 - r3: **APPROVED**. 독립 읽기 전용 리뷰가 두 지적 해소, UID/요청 ID·삭제 차단·충돌/메일/목록/집계 경계, 46개 검사·production/Worker dry-run·이후 문구 수정과 추가 production 확인을 검토했다. 문서13개·상대 링크147개·인코딩/공백도 리뷰어가 재실행해 PASS했다. 결과는 `tmp/codex/WEB-06-implementation-review.md`다.
 - 구현 리뷰 APPROVED 후 로컬 커밋하고 고정 SHA를 별도 worktree에서 main 대비 재리뷰한다. 통과한 SHA만 `tmp/codex/reviewed.txt`에 기록하며 push/PR은 별도 사용자 요청 때 진행한다.
+- 고정 SHA `aca7332` 리뷰 r1: **WARNING**. 숫자 code를 가진 DOMException AbortError의 연속 시간 초과 중단 누락과 이메일 확인 후 busy 중 설정 화면 재구성 차단2건을 확인했다. 이 SHA는 통과 장부에 넣지 않는다. 시간 초과/네트워크 예외 분류·중단 후 불필요한 목록 요청 제거·확인 완료 내부 갱신을 수정했다. DOMException3종의 순수 검사와 실제 fetch45초 타이머2회/후속 요청0개·Emulator 이메일 확인 완료 패널 갱신 회귀를 추가해 전체48개가 통과했다. 수정본 독립 리뷰 뒤 새 커밋/SHA로 다시 검토한다.
+- SHA 지적 수정본 리뷰 r2: **APPROVED**. 독립 리뷰가 두 지적 해소·UID/세대/dirty/busy 경계와 최종48개·production/Worker dry-run·측정/문서 일치를 확인했다. 이동 단위5개·이번 수정 문서7개/상대 링크101개·공백 검사를 직접 실행해 PASS했다. 결과 `tmp/codex/WEB-06-sha-fixes-review.md`. 새 커밋의 고정 SHA는 별도 worktree에서 main 대비 다시 리뷰한다.

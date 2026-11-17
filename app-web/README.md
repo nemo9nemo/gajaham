@@ -1,6 +1,6 @@
 # 가자함 실제 웹앱 · WEB-02
 
-2026-11-17 [WEB-06 사용 흐름 보완](../docs/plans/WEB-06-personal-beta-flow.md)은 게스트 이동 중단/재개·원인별 오류·중복 기록/메모 비교·충돌 입력 보호·모바일 대화상자·메일 대기·연결 상태와 목록 DOM50/더 보기를 추가한다. 전체 계정 목록을 읽은 뒤 검색/건수를 표시하며 영속 계정 초안/오프라인 큐를 만들지 않는다. [46개 로컬 검사와 남은 운영 검증](../docs/validation/WEB-06-personal-beta-flow.md), [항목별 관리 문서](../docs/research/webapp-release-review-2026-11-17.md)를 따른다.
+2026-11-17 [WEB-06 사용 흐름 보완](../docs/plans/WEB-06-personal-beta-flow.md)은 게스트 이동 중단/재개·원인별 오류·중복 기록/메모 비교·충돌 입력 보호·모바일 대화상자·메일 대기·연결 상태와 목록 DOM50/더 보기를 추가한다. 전체 계정 목록을 읽은 뒤 검색/건수를 표시하며 영속 계정 초안/오프라인 큐를 만들지 않는다. [48개 로컬 검사와 남은 운영 검증](../docs/validation/WEB-06-personal-beta-flow.md), [항목별 관리 문서](../docs/research/webapp-release-review-2026-11-17.md)를 따른다.
 
 2026-11-10 현재 출시 준비는 [WEB-03 상태표](../docs/release/WEB-03-readiness.md)·[운영 절차](../docs/release/WEB-03-operator-runbook.md)·[검사 증거](../docs/validation/WEB-03-release-preparation.md)를 따른다. /privacy/는 무로그인 안내 URL이다. 공개 설정을 release.config.local.json에 한 번 입력한 뒤 `node app-web/scripts/prepare-release.mjs release.config.local.json`으로 미배포 번들을 생성한다. 실제 설정/운영자·문의처·시행일·국외 처리 안내 확인이 없으면 생성하지 않는다. 가상 fixture 산출물은 배포하지 않는다.
 

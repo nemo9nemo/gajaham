@@ -77,6 +77,16 @@ test('transfer reload: repeated unavailable responses stop, reload sends nothing
   await page.getByRole('button', { name: '계정에 담기 →' }).click(); await page.getByRole('button', { name: '이 계정에 담기', exact: true }).click(); await expect(page.getByRole('dialog')).toHaveCount(0); await expect(page.locator('.place-card')).toHaveCount(3); expect(attempts[2]).toBe(attempts[0]); expect(attempts[3]).toBe(attempts[1]);
 });
 
+test('real fetch deadlines pause after two AbortErrors and do not start a trailing list request', async ({ page }) => {
+  await page.goto('/'); await seedGuest(page, 3); await page.reload(); await signup(page); await page.clock.install();
+  const release = []; let creates = 0; let lists = 0;
+  await page.route(api, async route => { const action = route.request().postDataJSON().data.action; if (action === 'list') { lists++; await route.continue(); return; } if (action !== 'create') { await route.continue(); return; } creates++; await new Promise(resolve => release.push(resolve)); await route.abort('aborted').catch(() => {}); });
+  await page.getByRole('button', { name: '계정에 담기 →' }).click(); await page.getByRole('button', { name: '이 계정에 담기', exact: true }).click(); await expect.poll(() => creates).toBe(1);
+  await page.clock.fastForward(45001); await expect.poll(() => creates).toBe(2); await page.clock.fastForward(45001);
+  await expect(page.locator('#transfer-status')).toContainText('멈췄어요'); expect(creates).toBe(2); expect(lists).toBe(0); await expect(page.locator('.account-pill')).toContainText('연결 확인 필요');
+  expect(await page.evaluate(async () => (await (await import('/src/guest.mjs')).allGuest()).length)).toBe(3); release.forEach(resolve => resolve());
+});
+
 test('restore acknowledgement keeps the duplicate draft even when subsequent list requests are unavailable', async ({ page }) => {
   await page.goto('/'); await signup(page); const sourceUrl = 'https://instagram.com/p/RESTORE_DRAFT/'; await add(page, { memo: '원래 메모', sourceUrl }); await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.locator('.place-card').getByRole('button').click(); await page.getByRole('button', { name: '휴지통으로', exact: true }).click(); await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -170,6 +180,9 @@ test('mail requests use Korean, enforce a resend cooldown, protect existence and
   page.on('request', request => { if (request.url().includes('accounts:sendOobCode')) requests.push(request.headers()['x-firebase-locale']); });
   await page.getByRole('button', { name: '계정', exact: true }).click(); await expect(page.getByRole('button', { name: /^확인 메일 보내기/ })).toBeDisabled();
   await page.clock.fastForward(61000); await page.getByRole('button', { name: /^확인 메일 보내기/ }).click(); await expect(page.getByRole('button', { name: /^확인 메일 보내기/ })).toBeDisabled(); expect(requests).toEqual(['ko']);
+  const uid = await page.evaluate(async () => (await import('/src/gateway.mjs')).currentUser().uid);
+  const verified = await page.request.post('http://127.0.0.1:9199/identitytoolkit.googleapis.com/v1/accounts:update?key=fake-local-key', { headers: { Authorization: 'Bearer owner' }, data: { localId: uid, emailVerified: true } }); expect(verified.ok()).toBe(true);
+  await page.getByRole('button', { name: '확인했어요', exact: true }).click(); await expect(page.locator('.verified')).toHaveText('✓ 이메일 확인 완료'); await expect(page.locator('.verification-box')).toHaveCount(0);
   await page.getByRole('button', { name: '로그아웃', exact: true }).click();
   for (const target of [email(), address]) {
     await page.getByRole('button', { name: '로그인하기 →' }).click(); await page.getByRole('button', { name: '비밀번호를 잊었어요' }).click(); await page.getByLabel('이메일', { exact: true }).fill(target); await page.getByRole('button', { name: /^재설정 메일 요청/ }).click();

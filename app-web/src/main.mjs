@@ -185,10 +185,10 @@ function loginDialog(kind = 'login') {
   openDialog(reset ? '비밀번호 재설정' : signup ? '가자함 시작하기' : '다시 만나서 반가워요', `<p class="form-intro">${reset ? '가입에 사용한 이메일을 입력해 주세요.' : '로그인하면 모아 둔 기록을 어디서든 이어서 볼 수 있어요.'}</p><form data-form="auth" data-kind="${kind}"><label>이메일<input name="email" type="email" required maxlength="254" autocomplete="email" placeholder="이메일 주소"></label>${reset ? '' : `<label>비밀번호<input name="password" type="password" required ${signup ? 'minlength="12"' : ''} maxlength="128" autocomplete="${signup ? 'new-password' : 'current-password'}" placeholder="${signup ? '영문 소문자·숫자를 포함한 12~128자' : '비밀번호'}"></label>`}<button class="button primary full-width" type="submit" ${reset ? 'data-mail-kind="reset" data-mail-label="재설정 메일 요청"' : ''}>${reset ? '재설정 메일 요청' : signup ? '이메일로 시작하기' : '로그인'}</button></form><div class="auth-links">${button(signup ? 'login' : 'signup', signup ? '이미 계정이 있어요' : '처음이신가요? 가입하기', 'text-button')}${!reset ? button('reset', '비밀번호를 잊었어요', 'text-button') : button('login', '로그인으로 돌아가기', 'text-button')}</div><p class="form-footnote">개인 기록은 나만 볼 수 있어요. 가입 전에 ${button('privacy', '저장과 개인정보 안내', 'inline-button')}를 확인해 주세요.</p>`, 'auth');
   updateCooldowns();
 }
-function settingsDialog() {
+function settingsDialog(force = false) {
   const account = state.owner !== 'guest' && state.owner !== 'loading';
   openDialog('설정과 계정', `<div class="account-summary"><span class="avatar">${account ? '◉' : '◇'}</span><div><strong>${account ? '나의 계정' : '로그인 없이 이용 중'}</strong><p>${e(account ? state.user?.email ?? '' : '이 브라우저에만 기록이 남아요.')}</p></div></div>${account ? `<p class="settings-copy">개인 기록은 계정에 저장돼요. 같은 계정으로 다른 기기에서도 볼 수 있어요.</p>${!state.user?.emailVerified ? `<div class="verification-box"><p>이메일 확인을 마쳐 주세요.</p>${button('send-verification', '확인 메일 보내기', 'text-button', 'data-mail-kind="verification" data-mail-label="확인 메일 보내기"')}${button('refresh-verification', '확인했어요', 'text-button')}</div>` : '<p class="verified">✓ 이메일 확인 완료</p>'}${state.guestCount ? button('transfer', `브라우저 기록 ${state.guestCount}개 계정에 담기`, 'button secondary full-width') : ''}${button('logout', '로그아웃', 'button secondary full-width')}${button('delete-account', '계정 탈퇴', 'button danger full-width')}` : `<p class="settings-copy">로그인하면 다른 기기에서도 기록을 이어서 볼 수 있어요. 이미 담은 브라우저 기록은 선택해서 계정에 옮길 수 있어요.</p>${button('login', gateway.available ? '로그인 / 가입' : '계정 이용 준비 중', 'button primary full-width', gateway.available ? '' : 'disabled')}`}
-    <hr>${button('trash-tab', '휴지통 보기', 'settings-link')}${button('privacy', '저장과 개인정보 안내', 'settings-link')}<p class="form-footnote">현재는 개인 보관함을 제공해요. 링크의 장소는 직접 확인해 주세요.</p>`, 'settings');
+    <hr>${button('trash-tab', '휴지통 보기', 'settings-link')}${button('privacy', '저장과 개인정보 안내', 'settings-link')}<p class="form-footnote">현재는 개인 보관함을 제공해요. 링크의 장소는 직접 확인해 주세요.</p>`, 'settings', force);
   updateCooldowns();
 }
 function privacyDialog() {
@@ -220,8 +220,13 @@ async function startTransfer() {
       session.retryAt = result.error?.reason === 'rate-limited' ? result.error.retryAt || Date.now() + 60000 : 0;
       status.textContent += ' · 멈췄어요. 중복과 실패, 아직 보내지 않은 기록은 이 브라우저에 남아 있어요.';
       if (result.error) showError(result.error);
-      if (result.error?.code !== 'resource-exhausted') await refresh(session.target, false);
-      else { state.loading = false; state.connection = result.error.reason === 'rate-limited' ? 'ready' : state.connection; }
+      if (!result.error) await refresh(session.target, false);
+      else {
+        // A failed transfer must stop network work, including an extra list
+        // request that could otherwise spend another full fetch timeout.
+        try { const count = (await allGuest()).filter(row => row.state !== 'trash').length; if (current()) state.guestCount = count; } catch { /* Keep the guest original and existing count. */ }
+        if (current()) { state.loading = false; state.connection = result.error.code === 'resource-exhausted' ? 'ready' : 'failed'; }
+      }
       if (current()) renderApp();
       return;
     }
@@ -326,7 +331,7 @@ document.addEventListener('click', event => {
   if (action === 'trash-tab') { if (!closeDialog()) return; state.tab = 'trash'; state.displayLimit = 50; renderApp(); return; }
   if (action === 'logout') { void run(gateway.logout, () => closeDialog(true)); return; }
   if (action === 'send-verification') { void run(() => gateway.verifyEmail(current.owner), () => { updateCooldowns(); toast('확인 메일을 요청했어요. 잠시 뒤 메일함을 확인해 주세요.'); }); return; }
-  if (action === 'refresh-verification') { void run(() => gateway.refreshUser(current.owner), () => { settingsDialog(); toast(state.user?.emailVerified ? '이메일 확인을 마쳤어요.' : '아직 이메일 확인 전이에요. 메일의 안내를 따라 주세요.'); }); return; }
+  if (action === 'refresh-verification') { void run(() => gateway.refreshUser(current.owner), () => { settingsDialog(true); toast(state.user?.emailVerified ? '이메일 확인을 마쳤어요.' : '아직 이메일 확인 전이에요. 메일의 안내를 따라 주세요.'); }); return; }
   if (action === 'transfer') { void transfer(); return; }
   if (action === 'confirm-transfer') { void startTransfer(); return; }
   if (action === 'pause-transfer') { if (transferSession) { transferSession.stopping = true; target.disabled = true; dialog.querySelector('#transfer-status').textContent += ' · 현재 항목 처리 후 멈추고 있어요.'; } return; }

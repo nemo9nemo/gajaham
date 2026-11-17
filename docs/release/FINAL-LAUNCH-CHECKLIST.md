@@ -31,7 +31,7 @@
 
 WEB-03의 고유 로컬 검사27개, production 번들/보안 헤더 설정·Worker dry-run·독립 코드 리뷰가 완료됐다. 웹앱/Worker audit0과 기존 개발 Emulator CLI의 moderate14 잔여/격리를 구분한다. [검사 기록](../validation/WEB-03-release-preparation.md)을 따른다.
 
-위27개는 WEB-03 당시 이력이다. 2026-11-17 WEB-06의 [후속 로컬 검사](../validation/WEB-06-personal-beta-flow.md)는46개 통과·production/Worker dry-run PASS·웹/Worker audit0이며 운영 검사가 아니다. 이번에 원격 PR/Actions 상태를 다시 조회한 것은 아니다.
+위27개는 WEB-03 당시 이력이다. 2026-11-17 WEB-06의 [후속 로컬 검사](../validation/WEB-06-personal-beta-flow.md)는48개 통과·production/Worker dry-run PASS·웹/Worker audit0이며 운영 검사가 아니다. 이번에 원격 PR/Actions 상태를 다시 조회한 것은 아니다.
 
 운영자 정보가 비어 있는 안내 초안·fixture 번들·localhost 주소는 공개 출시 자료가 아니다. 예산 알림으로 과금 한도를 대신하지 않으며 무료 한도 초과 시 기능이 제한될 수 있다. CPU/인증/삭제가 무료 환경에서 통과하지 않으면 공개 전에 구현/설정을 조정한다. 계정 인가·App Check·삭제 차단을 끄거나 유료 전환으로 해결하지 않는다.
 

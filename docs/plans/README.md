@@ -16,7 +16,7 @@ Codex가 기획·구현·검증·독립 리뷰를 진행하는 작업 단위 브
 
 | 작업 | 범위 | 상태 |
 | --- | --- | --- |
-| [WEB-06](WEB-06-personal-beta-flow.md) | 관리 문서 U01~U08의 P1 사용 흐름·목록 표시/측정·휴지통 운영 절차와 6.2절 문서 정리 | 로컬46 PASS·production/Worker dry-run·audit0·독립 구현 리뷰 APPROVED · 운영/실기기·F 확장·U05/U08 P2는 별도 |
+| [WEB-06](WEB-06-personal-beta-flow.md) | 관리 문서 U01~U08의 P1 사용 흐름·목록 표시/측정·휴지통 운영 절차와 6.2절 문서 정리 | 로컬48 PASS·production/Worker dry-run·audit0·독립 구현 리뷰 APPROVED · 운영/실기기·F 확장·U05/U08 P2는 별도 |
 | [RES-02](RES-02-webapp-release-review.md) | 웹앱 출시 분석·개선 제안과 지속 관리 문서 정비 | 최초 분석 완료 · 후속 문서 보완의 검사/리뷰는 브리프 참조. L/U/F 항목 구현·운영 검증 완료를 뜻하지 않음 |
 | [WEB-03](WEB-03-release-preparation.md) | 공개 설정/미배포 번들·개인정보 URL·Cron/집계·운영 절차·보안 | 로컬 검사/독립 리뷰, 최신 결과는 브리프/검사 기록. 운영 계정/실기기/공개 배포 미실행 |
 | [WEB-02](WEB-02-no-billing.md) | 결제 미연결 정책·실사용 조사·Workers/D1 Free 서버·보안·탈퇴 이전 | 로컬20개·production/Worker dry-run·audit0·구현 리뷰 APPROVED. 운영 Free/CPU/실메일/Galaxy/배포 미실행 · 정확한 SHA는 별도 장부 |
