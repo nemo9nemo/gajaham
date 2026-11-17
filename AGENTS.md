@@ -20,6 +20,8 @@
 
 충돌을 발견하면 근거를 확인해 기준 파일을 일치시킨다. 중요한 선택은 docs/decisions에 기록한다.
 
+웹 출시 보완·후속 개선은 [프로젝트 관리 문서](docs/research/webapp-release-review-2026-11-17.md)의 L/U/F ID로 추적한다. 관련 작업의 착수·검증·범위 변경 시 해당 항목의 상태·기준일/커밋·브리프/검사 증거·갱신 이력을 함께 고친다. 이 문서의 제안 등록은 제품 범위 승인이나 기능/출시 완료를 뜻하지 않으며 제품 기획·결정·계약과 실제 검증 기록을 우선한다.
+
 ## 구현 경계
 
 기획 문서에서 확정된 제품 규칙:
@@ -43,6 +45,8 @@
 
 2026-11-10 WEB-04는 사용자 지금 확인(PR3 검토/병합·소유 계정 접근·공개 운영정보)과 연결 뒤 확인(실메일/Galaxy)을 구분한다. 기술 설정/JSON/실제 처리 안내 초안은 Codex가 준비하고 운영자는 사실/공개를 확인한다. 기존 PR #3을 유지하며 공개 저장소의 표준 ubuntu-24.04·읽기 권한·캐시/artifact 업로드/배포 없는 GitHub Actions를 사용한다. 비공개 저장소면 job을 건너뛴다. app-web/scripts/verify-release.mjs는 manifest/파일hash·경로/민감파일·Hosting/Worker 구성을 대조하며 출처 인증/무료 운영 확인을 대신하지 않는다. 로컬 검사는 docs/validation/WEB-04-launch-verification.md, 원격 결과는 실제 Actions/PR Checks를 따른다. 실제 계정/Free CPU/메일/Galaxy/서비스 배포는 계속 별도 검사다.
 2026-11-13 WEB-05는 실제 Spark 프로젝트/웹앱·이메일 인증 초기 설정과 가입 비밀번호 안내/검사를 소문자·숫자 포함12~128자로 일치시킨다. 열거 보호·사용자 직접 Auth 삭제 차단·운영 도메인을 확인한다. 관리 비밀/공개 운영정보/Cloudflare 메일 인증/실제 D1·App Check·CPU/메일/Galaxy·배포와 초기 설정을 구분한다. 브리프/검사는 docs/plans/WEB-05-production-auth-readiness.md·docs/validation/WEB-05-production-auth-readiness.md다.
+
+2026-11-17 WEB-06은 기존 스택에서 U01~U08의 사용 흐름을 보완한다. 이동 중단/명시 재개·고정 오류 이유/호출 제한 retryAt, UID/세션 메모리만의 중복/충돌 비교·선택 필드 재저장·dirty 확인, 모바일 한 열/44px 목표·dialog 이름/오류/포커스, 한국어 메일/60초 대기·연결 상태를 구현한다. 전체 목록 검색/건수는 유지하고 카드 DOM을50개부터 늘리며 만료 휴지통은 집계/운영 절차만 추가한다. 기준은 docs/plans/WEB-06-personal-beta-flow.md·docs/validation/WEB-06-personal-beta-flow.md다. 로컬48개 검사와 실제 운영 CPU/DB·실메일/Galaxy 검사를 구분한다. U05 서버 확장·U08 정기 전체 정리와 지도/공유/DM은 후속이다.
 
 ## 산출물과 검증
 

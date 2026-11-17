@@ -32,16 +32,17 @@ export async function createGuest(input, requestId) {
       const target = await request(store.get(receipt.duplicateOf));
       if (!target) fail('failed-precondition', '이전 요청의 기록은 삭제됐어요. 새로 시작해 주세요.');
       if (target.canonicalSource !== normalized.canonicalSource) fail('already-exists', '다른 링크는 새 저장 요청으로 시작해 주세요.');
-      return { duplicate: true };
+      return { duplicate: true, id: target.id };
     }
     if (receipt) fail('failed-precondition', '이미 삭제하거나 계정으로 옮긴 요청이에요. 새로 시작해 주세요.');
     const rows = await request(store.getAll()); const old = rows.find(row => row.id === requestId);
     if (old) return { record: old, duplicate: false };
-    if (rows.length + await request(removed.count()) >= MAX_CREATE_REQUESTS) fail('resource-exhausted', '브라우저의 누적 저장 요청 한도에 도달했어요.');
+    if (rows.length + await request(removed.count()) >= MAX_CREATE_REQUESTS) fail('resource-exhausted', '브라우저의 누적 저장 요청 한도에 도달했어요.', { reason: 'operation-limit' });
     const duplicate = normalized.canonicalSource && rows.find(row => row.canonicalSource === normalized.canonicalSource);
-    if (duplicate) { removed.put({ id: requestId, duplicateOf: duplicate.id }); return { duplicate: true }; }
+    if (duplicate) { removed.put({ id: requestId, duplicateOf: duplicate.id }); return { duplicate: true, id: duplicate.id }; }
     const row = { id: requestId, ...normalized, sourceKey: normalized.canonicalSource || `manual:${requestId}`, state: normalized.name && normalized.address ? 'saved' : 'inbox', deletedAt: null, createdAt: Date.now(), updatedAt: Date.now(), revision: 1 };
-    if (rows.length >= MAX_RECORDS || rows.reduce((sum, r) => sum + bytes(r), 0) + bytes(row) > MAX_BYTES) fail('resource-exhausted', '보관 한도에 도달했어요.');
+    if (rows.length >= MAX_RECORDS) fail('resource-exhausted', '보관 건수 한도에 도달했어요.', { reason: 'record-limit' });
+    if (rows.reduce((sum, r) => sum + bytes(r), 0) + bytes(row) > MAX_BYTES) fail('resource-exhausted', '보관 용량에 도달했어요.', { reason: 'storage-limit' });
     store.add(row); return { record: row, duplicate: false };
   });
 }
@@ -59,8 +60,8 @@ export async function mutateGuest(action, data) {
     const row = { ...old, ...(input ?? {}), revision: old.revision + 1, updatedAt: Date.now() };
     if (action === 'trash') { row.state = 'trash'; row.deletedAt = Date.now(); }
     else { row.state = row.name && row.address ? 'saved' : 'inbox'; row.deletedAt = null; }
-    if (rows.reduce((sum, r) => sum + bytes(r), 0) - bytes(old) + bytes(row) > MAX_BYTES) fail('resource-exhausted', '보관 용량을 초과했어요.');
-    store.put(row);
+    if (rows.reduce((sum, r) => sum + bytes(r), 0) - bytes(old) + bytes(row) > MAX_BYTES) fail('resource-exhausted', '보관 용량을 초과했어요.', { reason: 'storage-limit' });
+    store.put(row); return { record: row };
   });
 }
 export function guestTransferId(row, uid) {

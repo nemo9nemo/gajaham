@@ -1,5 +1,7 @@
 # 가자함 (Gajaham) — 버전별 기능 확장안
 
+**2026-11-17 현재 기준 안내:** 아래 로드맵은 과거 제안/요구 이력이다. 로그인 서버 원본·게스트만 브라우저 로컬/명시 이동·사용자용 JSON 복원 미제공·설치 없는 웹 우선·결제 미연결 정책은 [계정 계약](../docs/contracts/web-account-data.md)·[결정0010](../docs/decisions/0010-no-billing-web-backend.md)을 따른다. [관리 문서](../docs/research/webapp-release-review-2026-11-17.md)·[WEB-06 로컬 검사](../docs/validation/WEB-06-personal-beta-flow.md)와 [실제 운영 설정 증거](../docs/validation/WEB-05-production-auth-readiness.md)를 구분하며, 아래 Android·내보내기·유료 비용 가설을 현재 구현/출시 조건으로 인용하지 않는다.
+
 **2026-11-03 최신 기준:** URL 접속 웹앱이며 설치가 필요하지 않다. 로그인 기록은 서버에 보관해 같은 계정으로 다른 기기/브라우저에서 조회한다. 게스트만 로컬 전용이며 이메일/게스트·2차 소셜·선택 공유는 유지한다. [결정0008](../docs/decisions/0008-account-cloud-records.md)·[구현0009](../docs/decisions/0009-web-personal-api.md)·[WEB-01](../docs/plans/WEB-01-account-cloud-app.md)을 우선한다. 개인 웹/서버 원본은 코드·공식 Emulator·독립 브라우저에서 검증했고 운영 프로젝트/유료·메일/App Check·Galaxy·공개 배포는 미실행이다. 아래 ‘첫 출시는 DM’ 등은 이력이다. 실제 지도·공유·DM은 후속이다.
 
 작성일: 2026-10-10. 수정일: 2026-10-12. 서비스명은 **가자함**, 영문 표기는 **Gajaham**으로 확정했다. [시장조사](./market-research-2026-10-10.md)를 바탕으로 한 기획 제안이다. 개발 착수나 출시 일정 확정 문서가 아니다.

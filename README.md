@@ -9,6 +9,7 @@
 - 이메일 가입/로그인, 게스트 IndexedDB, 명시적으로 선택한 계정 이동
 - UID별 비공개 서버 원본, 링크·장소·메모·방문 상태·휴지통
 - 버전 충돌/중복 요청/삭제 후 과거 재시도 차단, 재인증과 지속되는 계정 삭제
+- 게스트 이동 중단·재개, 중복 기록 찾기·명시적 메모 반영, 편집 충돌 비교와 미저장 입력 보호
 - 무로그인 `/privacy/` 안내, 공개 설정 교차 검사·배포하지 않는 출시 번들 생성
 
 운영 구성은 Firebase Auth/Hosting **Spark** + Cloudflare Workers/D1 **Free**입니다. 결제수단·Blaze·Cloud Billing·유료 구독을 연결하지 않습니다. 별도 도메인 구매 없이 기본 주소를 쓰며, 무료 한도 초과 시 사용이 제한될 수 있습니다.
@@ -22,6 +23,7 @@
 1. [최종 런칭 체크리스트](docs/release/FINAL-LAUNCH-CHECKLIST.md): 병합·계정 확인부터 실제 배포/검증까지의 순서와 담당
 2. [현재 완료/잔여 상태표](docs/release/WEB-03-readiness.md), [배포·운영 절차](docs/release/WEB-03-operator-runbook.md)
 3. [최신 검사 증거](docs/validation/WEB-03-release-preparation.md), [개인정보 확정 항목](docs/release/WEB-03-privacy-draft.md)
+4. [웹앱 출시 분석과 개선 관리](docs/research/webapp-release-review-2026-11-17.md): 출시 조건·사용 흐름·후속 기능을 L/U/F ID로 추적하는 지속 관리 문서. 항목별 진행과 근거를 갱신하며 제품 정책·운영 검사 기록과 구분합니다.
 
 ## 코드와 로컬 실행
 

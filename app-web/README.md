@@ -1,5 +1,7 @@
 # 가자함 실제 웹앱 · WEB-02
 
+2026-11-17 [WEB-06 사용 흐름 보완](../docs/plans/WEB-06-personal-beta-flow.md)은 게스트 이동 중단/재개·원인별 오류·중복 기록/메모 비교·충돌 입력 보호·모바일 대화상자·메일 대기·연결 상태와 목록 DOM50/더 보기를 추가한다. 전체 계정 목록을 읽은 뒤 검색/건수를 표시하며 영속 계정 초안/오프라인 큐를 만들지 않는다. [48개 로컬 검사와 남은 운영 검증](../docs/validation/WEB-06-personal-beta-flow.md), [항목별 관리 문서](../docs/research/webapp-release-review-2026-11-17.md)를 따른다.
+
 2026-11-10 현재 출시 준비는 [WEB-03 상태표](../docs/release/WEB-03-readiness.md)·[운영 절차](../docs/release/WEB-03-operator-runbook.md)·[검사 증거](../docs/validation/WEB-03-release-preparation.md)를 따른다. /privacy/는 무로그인 안내 URL이다. 공개 설정을 release.config.local.json에 한 번 입력한 뒤 `node app-web/scripts/prepare-release.mjs release.config.local.json`으로 미배포 번들을 생성한다. 실제 설정/운영자·문의처·시행일·국외 처리 안내 확인이 없으면 생성하지 않는다. 가상 fixture 산출물은 배포하지 않는다.
 
 WEB-04는 생성 직후 출시 파일을 자동 대조하고 `node app-web/scripts/verify-release.mjs <생성폴더> <보관한manifestSHA256>`으로 다시 검사한다. [사용자 확인 안내](../docs/release/USER-NEXT-STEPS.md)에서 지금 할 일과 연결 뒤 할 일을 나눈다. GitHub [Web checks](https://github.com/nemo9nemo/gajaham/actions/workflows/web-checks.yml)는 가상 검사만 하며 서비스 배포를 하지 않는다.
@@ -39,10 +41,10 @@ npm --prefix app-web run dev:emulator
 
 사용자는 Google·Cloudflare 소유 계정 로그인/생성, 실제 문의처 준비, Galaxy 검사 협조가 필요하다. 카드·Blaze·도메인·서버 구매는 필요 항목이 아니다. 계정 접근 후 설정과 검사는 Codex가 지원한다. 비밀번호·키는 대화나 문서에 붙이지 않는다.
 
-Firebase Spark/Cloud Billing 미연결과 Cloudflare **Workers Free**/유료 구독·결제수단 미연결을 실제 콘솔에서 확인한다. 로컬 preflight는 원격 청구 상태를 증명하지 않는다. 이메일·열거 보호·12자 영문/숫자 정책·정식 도메인·App Check를 설정한다. SMS·유료 API를 켜지 않는다.
+Firebase Spark/Cloud Billing 미연결과 Cloudflare **Workers Free**/유료 구독·결제수단 미연결을 실제 콘솔에서 확인한다. 로컬 preflight는 원격 청구 상태를 증명하지 않는다. 이메일·열거 보호·소문자/숫자 포함12~128자 정책·정식 도메인·App Check를 설정한다. SMS·유료 API를 켜지 않는다.
 
 .env.example의 공개 웹 설정·API origin·실제 문의처를 Git 제외 .env.production.local에 넣고 `node app-web/scripts/preflight.mjs` 통과 후 실제 번들을 빌드한다. Hosting CSP의 가상 API 주소를 실제 API origin 하나로 바꾼다. preflight가 정확한 origin 일치를 검사한다. 개인정보 처리방침·국외 처리·문의·D1 자동 복구 이력 Free7일을 확정한다.
 
 Free 운영 환경에서 JWT 검증/관리 토큰 갱신·큰 페이지·탈퇴/Cron의 CPU10ms·D1 호출50개 제한과 실제 메일·App Check·헤더·두 브라우저·Galaxy를 검증한다. 무료 CPU에 맞지 않으면 유료 업그레이드 없이 구현 축소/구성 재검토를 한다. 조건 통과 후 D1 migration·Worker·Cron·Hosting을 구체적인 대상으로 배포한다. 기본 web.app/workers.dev 주소를 쓴다.
 
-기본 firebase.json에는 Functions/Firestore 배포가 없다. 옛 firebase.web01.json은 Emulator용이고 Functions 배포는 중단 hook이 막는다. Worker build는 dry-run만 수행한다. 현재 실제 운영 계정·Free 플랜 확인·키·실메일·운영 CPU·Galaxy·공개 배포는 미실행이다. 기존 account/의 인증 삭제만으로 웹 서버 원본 삭제 완료를 주장하지 않는다.
+기본 firebase.json에는 Functions/Firestore 배포가 없다. 옛 firebase.web01.json은 Emulator용이고 Functions 배포는 중단 hook이 막는다. Worker build는 dry-run만 수행한다. 2026-11-13 증거에서 Firebase Spark·웹앱/기본 Hosting 연결·이메일 인증 초기 설정을 확인했다. Cloudflare 이메일 인증·실제 D1/API·App Check/관리 키·운영 Free 사용량/CPU·실메일·Galaxy·공개 배포는 남아 있으며 이번에 콘솔을 재확인하지 않았다. 기존 account/의 인증 삭제만으로 웹 서버 원본 삭제 완료를 주장하지 않는다.

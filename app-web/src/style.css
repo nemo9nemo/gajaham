@@ -6,3 +6,59 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 .privacy-copy h2{font-size:15px;margin:24px 0 8px}.policy-draft{background:var(--cream);padding:12px;border-radius:8px}
+
+/* Personal beta: readable text, predictable touch areas and bounded card DOM. */
+.icon-button { width:44px; height:44px; flex-shrink:0; }
+.button, .text-button, .pill-button, .filter, .settings-link { min-height:44px; }
+.pill-button, .filter, .settings-link, .text-button { font-size:13px; }
+.card-date, .category-label, .record-state, .card-bottom .text-button,
+.address, .menu-note, .menu-note span, .list-heading > span,
+.list-heading strong span, .content-footer, .content-footer span,
+.form-footnote, .notice-small { font-size:12px; }
+.memo, .guest-notice p, .settings-copy, .form-intro, .privacy-copy p { font-size:14px; }
+.place-card h3 { font-size:18px; }
+.account-pill { font-size:12px; gap:8px; }
+.sheet { scroll-padding:20px; overflow-wrap:anywhere; }
+.sheet label { font-size:14px; }
+.sheet input:not([type=checkbox]), .sheet textarea, .sheet select { font-size:16px; }
+.sheet input[type=checkbox] { width:24px; height:24px; flex-shrink:0; }
+.sheet .check-label { min-height:44px; }
+.sheet-actions { flex-wrap:wrap; position:sticky; bottom:0; background:#fff; padding:12px 0; z-index:1; }
+.sheet-actions > * { flex-basis:180px; }
+.sheet-heading { align-items:flex-start; }
+.sheet h2:focus, .form-error:focus, .conflict-panel h3:focus { outline:2px solid var(--green); outline-offset:4px; }
+.form-error { font-size:14px; }
+.more-records { grid-column:1/-1; text-align:center; padding:12px; }
+.duplicate-notice, .conflict-panel { padding:16px; margin-top:20px; border:1px solid #c9d8c2; border-radius:10px; background:#f5f8f0; }
+.duplicate-notice h3, .conflict-panel h3 { font-size:17px; margin-bottom:10px; }
+.duplicate-notice p, .conflict-panel p { font-size:14px; margin:8px 0; }
+.duplicate-notice pre, .conflict-panel pre { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; font-size:14px; background:#fff; border-radius:6px; padding:10px; }
+.conflict-field { padding:12px 0; border-bottom:1px solid var(--line); }
+.conflict-field h4 { font-size:15px; }
+.error-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+[hidden] { display:none !important; }
+@media(max-width:760px) {
+  .record-grid { grid-template-columns:1fr; gap:16px; }
+  .place-card { padding:20px; }
+  .card-date, .category-label, .address, .record-state,
+  .card-bottom .text-button, .menu-note, .menu-note span { font-size:13px; }
+  .memo { font-size:15px; }
+  .guest-notice { align-items:flex-start; flex-wrap:wrap; }
+  .guest-notice p { font-size:13px; min-width:180px; }
+  .guest-notice .text-button { font-size:13px; margin-left:auto; }
+  .notice-small { font-size:12px; }
+  .search-box input, .section-heading p { font-size:14px; }
+  .filter { font-size:13px; padding:8px 12px; }
+  .mobile-nav button { min-height:44px; font-size:12px; }
+  .account-pill { max-width:66%; font-size:12px; }
+  .pill-button { font-size:13px; padding:6px 10px; margin-left:0; }
+  .mobile-brand span { display:none; }
+  .topbar { padding:0 16px; gap:10px; }
+  .section-heading { flex-wrap:wrap; }
+  .add-button { margin-top:0; font-size:14px; }
+  .sheet { max-height:calc(100dvh - 24px); padding:20px; }
+  .sheet-heading h2 { font-size:20px; }
+  #toast { font-size:13px; max-height:35dvh; overflow:auto; }
+}
+@media(max-width:420px) { .form-columns { grid-template-columns:1fr; gap:0; } }
+@media(max-height:480px) { .sheet { max-height:calc(100dvh - 12px); padding:16px; } }

@@ -6,7 +6,7 @@
     "dev:emulator": "vite --mode emulator --host 127.0.0.1 --port 5183 --strictPort",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 5183 --strictPort",
-    "test:unit": "node --test tests/unit.test.mjs",
+    "test:unit": "node --test tests/unit.test.mjs tests/flow.test.mjs",
     "test:browser": "playwright test"
   },
   "dependencies": { "firebase": "13.2.0" },
