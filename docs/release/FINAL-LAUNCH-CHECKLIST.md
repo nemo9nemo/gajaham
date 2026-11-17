@@ -4,7 +4,7 @@
 
 ## 최종 검토 대상과 이전 작업
 
-최신 통합 대상은 `codex/WEB-03-release-preparation`이다. 코드·개인정보 초안·출시 도구·운영 절차와 이전 구현 이력을 포함한다. 이전 브랜치도 버전 이력 보관용으로 전송하되, 이전 단계 정책/코드를 따로 병합해 최신 웹 정책을 되돌리지 않는다. 이전 작업 브랜치는 원격에 보관하고, 추가 이력 PR을 여러 개 만들지 않고 최신 통합 PR 하나를 검토한다. UI-02의 별도 커밋 이력도 보존한다.
+2026-11-17 현재 소스 비교 기준은 WEB-05·PR #3/#4 병합 코드가 반영된 로컬 main `f714893`이다. `codex/WEB-03-release-preparation`은 이전 통합 이력이다. [WEB-06](../plans/WEB-06-personal-beta-flow.md)의 사용 흐름 보완은 별도 작업 브랜치의 로컬 변경이며 아직 push/PR/배포하지 않았다. 이전 브랜치·UI-02 커밋은 이력으로 보존하고, 과거 정책/코드를 따로 병합해 최신 웹 정책을 되돌리지 않는다.
 
 [통합 PR #3](https://github.com/nemo9nemo/gajaham/pull/3)은 사용자 지시로 병합 완료했다. [병합 main 자동 검사](https://github.com/nemo9nemo/gajaham/actions/runs/42838162742)도 성공했다. 이후 소스 변경은 별도 작업 브랜치·독립 리뷰·PR 절차를 따른다. 실제 배포/운영 검사는 소스 병합과 구분한다.
 
@@ -30,6 +30,8 @@
 ## 이미 확인한 것과 공개 판정
 
 WEB-03의 고유 로컬 검사27개, production 번들/보안 헤더 설정·Worker dry-run·독립 코드 리뷰가 완료됐다. 웹앱/Worker audit0과 기존 개발 Emulator CLI의 moderate14 잔여/격리를 구분한다. [검사 기록](../validation/WEB-03-release-preparation.md)을 따른다.
+
+위27개는 WEB-03 당시 이력이다. 2026-11-17 WEB-06의 [후속 로컬 검사](../validation/WEB-06-personal-beta-flow.md)는46개 통과·production/Worker dry-run PASS·웹/Worker audit0이며 운영 검사가 아니다. 이번에 원격 PR/Actions 상태를 다시 조회한 것은 아니다.
 
 운영자 정보가 비어 있는 안내 초안·fixture 번들·localhost 주소는 공개 출시 자료가 아니다. 예산 알림으로 과금 한도를 대신하지 않으며 무료 한도 초과 시 기능이 제한될 수 있다. CPU/인증/삭제가 무료 환경에서 통과하지 않으면 공개 전에 구현/설정을 조정한다. 계정 인가·App Check·삭제 차단을 끄거나 유료 전환으로 해결하지 않는다.
 

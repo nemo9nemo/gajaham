@@ -83,7 +83,7 @@ test('two browsers share account records; guest transfer is explicit; XSS, confl
   await expect(second.getByRole('dialog')).toHaveCount(0);
   await page.getByLabel('가고 싶은 이유').fill('오래된 첫 번째 브라우저 수정'); await page.getByRole('button', { name: '변경 저장' }).click();
   await expect(page.locator('.form-error')).toContainText('다른 기기');
-  await page.getByRole('button', { name: '닫기', exact: true }).click(); await page.getByRole('button', { name: '최신 기록 불러오기' }).click();
+  page.once('dialog', dialog => dialog.accept()); await page.getByRole('button', { name: '닫기', exact: true }).click(); await page.getByRole('button', { name: '최신 기록 불러오기' }).click();
   await expect(page.locator('.memo').filter({ hasText: '두 번째 브라우저 수정' })).toHaveCount(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: '../tmp/codex/WEB-01-mobile.png', fullPage: true });
@@ -219,6 +219,6 @@ for (const duplicateFirst of [false, true]) test(`permanent deletion cannot be u
   await other.locator('.place-card').getByRole('button').click(); other.once('dialog', dialog => dialog.accept()); await other.getByRole('button', { name: '영구 삭제', exact: true }).click();
   await expect(other.locator('.place-card')).toHaveCount(0);
   await page.getByRole('button', { name: '내 보관함에 담기' }).click(); await expect(page.locator('.form-error')).toContainText('기록 상태가 바뀌었어요');
-  await page.getByRole('button', { name: '닫기', exact: true }).click(); await page.getByRole('button', { name: '최신 기록 불러오기' }).click();
+  page.once('dialog', dialog => dialog.accept()); await page.getByRole('button', { name: '닫기', exact: true }).click(); await page.getByRole('button', { name: '최신 기록 불러오기' }).click();
   await expect(page.locator('.place-card')).toHaveCount(0); await context.close();
 });

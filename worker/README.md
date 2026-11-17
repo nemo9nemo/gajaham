@@ -1,5 +1,7 @@
 # 개인 기록 API · Workers/D1 Free
 
+WEB-06은 HTTP429의 `details.reason`을 `rate-limited`/`record-limit`/`storage-limit`/`operation-limit`/`receipt-limit`으로 구분한다. 호출 제한만 서버 epoch ms의 `retryAt`을 제공한다. 코드만 보고 모든429를 대기 후 재시도하지 않으며, [계정 계약](../docs/contracts/web-account-data.md)·[로컬 검증](../docs/validation/WEB-06-personal-beta-flow.md)을 따른다. health.sql의 만료 휴지통 집계는 읽기 비용이 드는 수동 조회이며 정기 전체 삭제 기능이 아니다.
+
 WEB-03은 Cron 실패를 고정 ACCOUNT_CLEANUP_PENDING으로 식별하고 다른 작업을 계속 처리한다. pending은 지우지 않으며 재시도한다. operations/health.sql은 개인정보 없는 집계만 조회한다. 현재 배포/키/장애 점검 절차는 [운영 문서](../docs/release/WEB-03-operator-runbook.md), 사용자 확인 전 완료/남은 항목은 [상태표](../docs/release/WEB-03-readiness.md)를 따른다.
 
 Firebase Auth/Hosting Spark와 함께 사용하는 WEB-02 서버다. 결제수단·Workers Paid·Cloud Billing을 연결하지 않는다. 계정별 원본은 D1에만 두고 브라우저가 DB를 직접 열지 않는다. [웹앱 실행](../app-web/README.md), [비용 조사](../docs/research/no-billing-stack-2026-11-09.md), [결정0010](../docs/decisions/0010-no-billing-web-backend.md)을 따른다.

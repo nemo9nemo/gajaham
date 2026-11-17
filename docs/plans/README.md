@@ -6,7 +6,7 @@ Codex가 기획·구현·검증·독립 리뷰를 진행하는 작업 단위 브
 
 출시 보완·후속 개선 항목은 [웹앱 출시 분석과 개선 관리 문서](../research/webapp-release-review-2026-11-17.md)에서 L/U/F ID로 추적한다. 후속 브리프는 해당 ID를 연결하고 착수/검증 시 문서의 상태·근거·갱신 이력을 함께 고친다. [RES-02](RES-02-webapp-release-review.md)의 문서 작업 완료와 각 제안의 구현·공개 출시 완료를 구분한다.
 
-사용자의 현재 확인 항목은 [지금/나중 안내](../release/USER-NEXT-STEPS.md), 소스 원격 자동검사·출시 파일 무결성은 [WEB-04](WEB-04-launch-verification.md)를 따른다. 기존 통합 PR #3을 갱신하며 실제 서비스 공개/운영 계정 검사는 별도다.
+사용자의 현재 확인 항목은 [지금/나중 안내](../release/USER-NEXT-STEPS.md), 소스 원격 자동검사·출시 파일 무결성은 [WEB-04](WEB-04-launch-verification.md)를 따른다. 로컬 main `f714893`에는 PR #3/#4의 병합 코드가 반영돼 있다. 이후 변경은 새 작업 브랜치·독립 리뷰 뒤 사용자 요청 시 별도 PR로 전달하며 실제 서비스 공개/운영 계정 검사와 구분한다. 원격 Checks의 현재 상태는 이번에 조회하지 않았다.
 
 2026-11-10 사용자 확인 전 가능한 출시 준비는 [WEB-03](WEB-03-release-preparation.md)과 [최신 상태표](../release/WEB-03-readiness.md)를 따른다. 운영 정보/계정 없이 마친 일과 계정 연결 후 Codex가 이어서 할 일을 구분한다.
 
@@ -16,6 +16,7 @@ Codex가 기획·구현·검증·독립 리뷰를 진행하는 작업 단위 브
 
 | 작업 | 범위 | 상태 |
 | --- | --- | --- |
+| [WEB-06](WEB-06-personal-beta-flow.md) | 관리 문서 U01~U08의 P1 사용 흐름·목록 표시/측정·휴지통 운영 절차와 6.2절 문서 정리 | 로컬46 PASS·production/Worker dry-run·audit0·독립 구현 리뷰 APPROVED · 운영/실기기·F 확장·U05/U08 P2는 별도 |
 | [RES-02](RES-02-webapp-release-review.md) | 웹앱 출시 분석·개선 제안과 지속 관리 문서 정비 | 최초 분석 완료 · 후속 문서 보완의 검사/리뷰는 브리프 참조. L/U/F 항목 구현·운영 검증 완료를 뜻하지 않음 |
 | [WEB-03](WEB-03-release-preparation.md) | 공개 설정/미배포 번들·개인정보 URL·Cron/집계·운영 절차·보안 | 로컬 검사/독립 리뷰, 최신 결과는 브리프/검사 기록. 운영 계정/실기기/공개 배포 미실행 |
 | [WEB-02](WEB-02-no-billing.md) | 결제 미연결 정책·실사용 조사·Workers/D1 Free 서버·보안·탈퇴 이전 | 로컬20개·production/Worker dry-run·audit0·구현 리뷰 APPROVED. 운영 Free/CPU/실메일/Galaxy/배포 미실행 · 정확한 SHA는 별도 장부 |

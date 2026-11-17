@@ -47,6 +47,20 @@ test('D1: transaction rolls back every write when a version changes', async () =
   await db.runTransaction(async tx => { const old = await tx.get(ref); if (reads++ === 0) await ref.update({ value: 10 }); tx.set(ref, { value: old.data().value + 1 }); tx.set(db.doc('test/also'), { value: old.data().value }); });
   assert.equal((await ref.get()).data().value, 11); assert.equal((await db.doc('test/also').get()).data().value, 10);
 });
+
+test('D1/API: rate, record, storage and lifetime limits return fixed reasons and only a rate limit supplies retryAt', async () => {
+  for (const [reason, patch] of [['record-limit', { count: 5000 }], ['storage-limit', { bytes: 2 * 1024 * 1024 }], ['operation-limit', { operationCount: 100000 }]]) {
+    const uid = `limit-${reason}`; await call(uid, 'list'); await db.doc(`users/${uid}`).update(patch);
+    await assert.rejects(call(uid, 'create', payload(input)), error => { assert.equal(error.code, 'resource-exhausted'); assert.deepEqual(error.details, { reason }); return true; });
+    assert.equal((await db.doc(`users/${uid}`).collection('records').get()).size, 0);
+  }
+  const time = Date.now(); await db.doc('apiLimits/rate-test').set({ units: 120, windowStart: time });
+  const fixed = createService({ db, auth, now: () => time });
+  await assert.rejects(fixed.handle('rate-test', time / 1000, 'list'), error => { assert.deepEqual(error.details, { reason: 'rate-limited', retryAt: time + 60000 }); return true; });
+  const api = createApi({ db, auth: { ...auth, async current() { return {}; } }, verifier: { async check() {}, async auth() { return { uid: 'limit-operation-limit', auth_time: Date.now() / 1000 }; } }, origin: 'https://test.invalid' });
+  const response = await api.fetch(new Request('https://api.invalid/personalApi', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer local' }, body: JSON.stringify({ data: { action: 'create', payload: payload(input) } }) }), { waitUntil() {} });
+  assert.equal(response.status, 429); assert.deepEqual((await response.json()).error.details, { reason: 'operation-limit' });
+});
 test('D1: bounded permanent deletion retries, receipt privacy and tombstone cleanup', async () => {
   const uid = 'delete-me'; await call(uid, 'create', payload(input)); const receipt = 'a'.repeat(64);
   await assert.rejects(service.handle(uid, Date.now() / 1000 - 600, 'startDeletion', { receipt }), { code: 'failed-precondition' });
@@ -72,6 +86,16 @@ test('D1: full expired page stays readable; bulk deletion makes durable progress
   assert.deepEqual(await service.deletionStatus({ receipt }), { state: 'deleting' });
   await createApi({ db, auth, verifier: {}, origin: 'https://test.invalid' }).scheduled();
   assert.deepEqual(await service.deletionStatus({ receipt }), { state: 'deleted' });
+});
+
+test('D1: a 201-row list follows the stable UID cursor without omissions or duplicates', async () => {
+  const uid = 'pagination-201'; await call(uid, 'list');
+  const rows = Array.from({ length: 201 }, () => ({ id: crypto.randomUUID(), ...input, state: 'saved', deletedAt: null, createdAt: Date.now(), updatedAt: Date.now(), revision: 1 }));
+  await binding.batch(rows.map(row => binding.prepare('INSERT INTO documents(path,parent,body,version) VALUES(?,?,?,?)').bind(`users/${uid}/records/${row.id}`, `users/${uid}/records`, JSON.stringify(row), crypto.randomUUID())));
+  await db.doc(`users/${uid}`).update({ count: 201, bytes: rows.reduce((sum, row) => sum + Buffer.byteLength(JSON.stringify(row)), 0) });
+  const first = await call(uid, 'list'); const second = await call(uid, 'list', { cursor: first.nextCursor });
+  assert.equal(first.items.length, 200); assert.equal(second.items.length, 1); assert.equal(second.nextCursor, '');
+  assert.deepEqual([...first.items, ...second.items].map(row => row.id).toSorted(), rows.map(row => row.id).toSorted());
 });
 test('HTTP: quota errors stay unavailable; strict CORS, body bounds, auth, revoked/disabled accounts', async () => {
   let disabled = false; let validSince = 0; const waits = [];
@@ -105,10 +129,12 @@ test('scheduled: retries other jobs, preserves pending and reports fixed failure
 test('operations: health SQL returns only read-only aggregate fields', async () => {
   const source = await readFile(new URL('../operations/health.sql', import.meta.url), 'utf8');
   const queries = source.replace(/^--.*$/gm, '').split(';').map(value => value.trim()).filter(Boolean);
-  const columns = [['account_state', 'accounts'], ['pending_accounts', 'oldest_request_ms', 'oldest_attempt_ms'], ['expired_metadata_rows']];
+  const columns = [['account_state', 'accounts'], ['pending_accounts', 'oldest_request_ms', 'oldest_attempt_ms'], ['expired_metadata_rows'], ['expired_trash_records', 'oldest_deleted_ms']];
   assert.equal(queries.length, columns.length);
   for (let i = 0; i < queries.length; i++) {
     assert.match(queries[i], /^SELECT\s/i); const result = await binding.prepare(queries[i]).all();
     for (const row of result.results) assert.deepEqual(Object.keys(row).sort(), columns[i].toSorted());
   }
+  const expired = (await binding.prepare(queries.at(-1)).first());
+  assert.equal(expired.expired_trash_records, 197); assert.ok(expired.oldest_deleted_ms < Date.now() - 30 * 86400000);
 });

@@ -26,7 +26,7 @@ export function createService({ db, auth, now = Date.now }) {
     await db.runTransaction(async tx => {
       const snap = await tx.get(ref); const data = snap.data();
       const units = data && time - data.windowStart < 60000 ? data.units + cost : cost;
-      if (units > 120) fail('resource-exhausted', '잠시 쉬었다가 다시 시도해 주세요.');
+      if (units > 120) fail('resource-exhausted', '잠시 쉬었다가 다시 시도해 주세요.', { reason: 'rate-limited', retryAt: data.windowStart + 60000 });
       tx.set(ref, { windowStart: data && time - data.windowStart < 60000 ? data.windowStart : time, units, purgeAt: Timestamp.fromMillis(time + 2 * 86400000) });
     });
   }
@@ -49,7 +49,7 @@ export function createService({ db, auth, now = Date.now }) {
       }
       const state = meta.data(); const createdCount = state.createdCount ?? state.count;
       const operationCount = state.operationCount ?? createdCount;
-      if (operationCount >= MAX_CREATE_REQUESTS) fail('resource-exhausted', '계정의 누적 저장 요청 한도에 도달했어요. 문의 창구를 이용해 주세요.');
+      if (operationCount >= MAX_CREATE_REQUESTS) fail('resource-exhausted', '계정의 누적 저장 요청 한도에 도달했어요. 문의 창구를 이용해 주세요.', { reason: 'operation-limit' });
       if (existing?.exists) {
         tx.set(removedRef(uid, requestId), { duplicateOf: existing.data().recordId });
         tx.update(user, { operationCount: operationCount + 1, updatedAt: now() });
@@ -57,7 +57,8 @@ export function createService({ db, auth, now = Date.now }) {
       }
       const value = { id: requestId, ...input, state: input.name && input.address ? 'saved' : 'inbox', deletedAt: null, createdAt: now(), updatedAt: now(), revision: 1, createRequestId: requestId, lastRequestId: requestId, createFingerprint: hash, lastFingerprint: hash };
       const size = bytes(value);
-      if (state.count >= MAX_RECORDS || state.bytes + size > MAX_BYTES) fail('resource-exhausted', '보관 한도에 도달했어요. 휴지통을 정리한 뒤 다시 시도해 주세요.');
+      if (state.count >= MAX_RECORDS) fail('resource-exhausted', '보관 건수 한도에 도달했어요. 휴지통을 정리한 뒤 다시 시도해 주세요.', { reason: 'record-limit' });
+      if (state.bytes + size > MAX_BYTES) fail('resource-exhausted', '보관 용량에 도달했어요. 메모를 줄이거나 휴지통을 정리해 주세요.', { reason: 'storage-limit' });
       tx.create(ref, value); if (source) tx.create(source, { recordId: requestId });
       tx.update(user, { count: state.count + 1, createdCount: createdCount + 1, operationCount: operationCount + 1, bytes: state.bytes + size, updatedAt: now() });
       return { record: publicRecord(value), duplicate: false };
@@ -88,7 +89,7 @@ export function createService({ db, auth, now = Date.now }) {
       if (action === 'update' || action === 'restore') { value.state = value.name && value.address ? 'saved' : 'inbox'; value.deletedAt = null; }
       if (action === 'trash') { value.state = 'trash'; value.deletedAt = now(); }
       const total = meta.data().bytes - bytes(old) + bytes(value);
-      if (total > MAX_BYTES) fail('resource-exhausted', '보관 용량을 초과했어요. 메모를 줄이거나 휴지통을 정리해 주세요.');
+      if (total > MAX_BYTES) fail('resource-exhausted', '보관 용량을 초과했어요. 메모를 줄이거나 휴지통을 정리해 주세요.', { reason: 'storage-limit' });
       tx.set(ref, value); tx.update(user, { bytes: total, updatedAt: now() }); return { record: publicRecord(value) };
     });
   }
@@ -125,7 +126,7 @@ export function createService({ db, auth, now = Date.now }) {
       const snap = await tx.get(ref); const data = snap.data();
       if (data?.state === 'deleted') return { state: 'deleted' };
       const hashes = data?.deletionReceiptHashes ?? [];
-      if (!hashes.includes(hash) && hashes.length >= 8) fail('resource-exhausted', '삭제 확인 요청이 많아요. 기존 요청 탭이나 문의 창구를 이용해 주세요.');
+      if (!hashes.includes(hash) && hashes.length >= 8) fail('resource-exhausted', '삭제 확인 요청이 많아요. 기존 요청 탭이나 문의 창구를 이용해 주세요.', { reason: 'receipt-limit' });
       if (!hashes.includes(hash)) tx.create(db.collection('deletionJobs').doc(hash), { state: 'deleting', requestedAt: now() });
       if (data?.state !== 'deleting') {
         tx.set(ref, { ...(data ?? { count: 0, bytes: 0, createdAt: now() }), state: 'deleting', deletionReceiptHashes: [hash], deletionRequestedAt: now(), updatedAt: now() });
