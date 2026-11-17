@@ -33,3 +33,9 @@
 ## 남은 검증
 
 실제 Spark/Workers/D1 Free·App Check/관리 권한·CPU/DB 사용량·실메일·Galaxy/Samsung Internet/TalkBack·공개 운영정보·공개 배포는 실행하지 않았다. U05 운영 비용/서버 확장과 U08 실제 운영 주기·담당/정기 정리도 남아 있다. 사용자 지시 없이 결제/원격 변경·push/PR은 하지 않는다. 독립 리뷰·문서 링크/공백 결과는 브리프와 고정 SHA 장부를 따른다.
+
+## 원격 전달·병합 검증
+
+2026-11-17 후속 요청으로 로컬 재검사·독립 리뷰·push/PR·CI 확인·병합과 병합 main 확인을 진행한다. 이 요청은 코드 전달/병합을 승인하며 위 운영·실메일·Galaxy·공개 배포의 미실행 경계를 바꾸지 않는다. 재실행 로그와 실제 원격 PR/Actions·head/merge SHA는 Git 제외 `tmp/codex/WEB-06-ship-*` 및 해당 PR/실행 결과로 확인한다. 이 절은 진행 절차이며 결과가 확인되기 전 완료 증거가 아니다.
+
+전달 전 로컬 재실행은48 PASS(단위/출시14·JWT/D1/API11·브라우저/HTTP23)·production/Worker dry-run PASS다. 웹/Worker audit0, 격리 개발 Emulator CLI는 moderate14·high/critical0으로 CI와 같은 high 기준을 통과했다. 각각 `WEB-06-ship-check.log`·`WEB-06-ship-audit-*.json`으로 초기 구현 검사와 구분한다. 목록 측정 JSON/화면은 검사 재실행 시 갱신되는 자료이며 위 초기 측정 표를 매번 동일하게 재현한다는 뜻은 아니다.

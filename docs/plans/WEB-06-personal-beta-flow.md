@@ -45,6 +45,8 @@
 
 ## Codex 구현 보고
 
+아래는 로컬 구현 단계의 보고다. 사용자의 원격 전달·병합 후속 요청과 검증은 마지막 절에 구분한다.
+
 - 변경 파일: `app-web/src/main.mjs`·`gateway.mjs`·`guest.mjs`·`style.css`, 새 `feedback.mjs`·`transfer.mjs`, 웹 검사 명령/패키지 scripts와 단위·브라우저 회귀, `worker/src/service.mjs`·집계 SQL·D1/API 검사. 문서는 계정 계약·관리 문서·본 브리프/검증 기록·브리프 목록·README/AGENTS·기획/과거 로드맵/최종 체크리스트/운영 절차를 함께 갱신했다. 의존성 버전·lockfile·migration은 바꾸지 않았다.
 - `node app-web/scripts/check.mjs`(전용 Node22.23.4·Chromium 캐시): **48 PASS**(단위/출시14·JWT/D1/API11·브라우저/HTTP23), production 번들 두 HTML·헤더 구성·Emulator 제외·Worker dry-run PASS. 최종 로그 `tmp/codex/WEB-06-check-sha-fixes.log`. 로컬 가상 데이터만 사용하고 자신이 실행한 Emulator/Worker는 종료했다. 이전46 PASS·문구 수정 뒤 production 확인 기록은 이력으로 유지한다.
 - 웹/Worker audit 각각0. 로그 `tmp/codex/WEB-06-audit-web.json`·`WEB-06-audit-worker.json`.
@@ -62,3 +64,11 @@
 - 구현 리뷰 APPROVED 후 로컬 커밋하고 고정 SHA를 별도 worktree에서 main 대비 재리뷰한다. 통과한 SHA만 `tmp/codex/reviewed.txt`에 기록하며 push/PR은 별도 사용자 요청 때 진행한다.
 - 고정 SHA `aca7332` 리뷰 r1: **WARNING**. 숫자 code를 가진 DOMException AbortError의 연속 시간 초과 중단 누락과 이메일 확인 후 busy 중 설정 화면 재구성 차단2건을 확인했다. 이 SHA는 통과 장부에 넣지 않는다. 시간 초과/네트워크 예외 분류·중단 후 불필요한 목록 요청 제거·확인 완료 내부 갱신을 수정했다. DOMException3종의 순수 검사와 실제 fetch45초 타이머2회/후속 요청0개·Emulator 이메일 확인 완료 패널 갱신 회귀를 추가해 전체48개가 통과했다. 수정본 독립 리뷰 뒤 새 커밋/SHA로 다시 검토한다.
 - SHA 지적 수정본 리뷰 r2: **APPROVED**. 독립 리뷰가 두 지적 해소·UID/세대/dirty/busy 경계와 최종48개·production/Worker dry-run·측정/문서 일치를 확인했다. 이동 단위5개·이번 수정 문서7개/상대 링크101개·공백 검사를 직접 실행해 PASS했다. 결과 `tmp/codex/WEB-06-sha-fixes-review.md`. 새 커밋의 고정 SHA는 별도 worktree에서 main 대비 다시 리뷰한다.
+
+## 원격 전달·병합 후속 요청
+
+- 2026-11-17 사용자가 커밋·push·검사·병합을 순서대로 끝까지 진행하도록 명시적으로 요청했다. 이 후속 요청은 초기 범위의 push/PR 금지를 이번 전달 작업에 한해 대체하며, PR 리뷰/검사 통과 뒤 병합까지 승인한 것으로 처리한다.
+- 대상은 RES-02 문서 변경을 포함한 현재 WEB-06 누적 변경이다. 과거 다른 기능 브랜치는 이력으로 유지한다. 운영 배포·계정/결제 연결·실메일·Galaxy와 미구현 확장은 이번 전달 범위에 추가하지 않는다.
+- 원격 main을 fetch해 기존 기준 `f714893`과 일치함을 확인했다. 로컬 통합·웹/Worker·격리 Emulator CLI 취약점 검사를 다시 실행하고, 추가 기록 커밋도 독립 리뷰한 SHA만 push한다.
+- 열린 PR 중복 여부 확인→PR 생성/갱신→push한 정확한 SHA의 별도 PR 리뷰→원격 CI 통과 확인→동일 head SHA로 병합→병합 main CI 확인 순서로 진행한다. 실제 PR/실행 URL과 SHA는 원격 결과 및 Git 제외 `tmp/codex/`의 전달 기록에 남긴다. 문서의 전달 요청 기록을 원격 검사/병합 완료로 해석하지 않는다.
+- 전달 전 재검사: `node app-web/scripts/check.mjs` 전체48 PASS·production/Worker dry-run PASS(`tmp/codex/WEB-06-ship-check.log`). 웹/Worker audit0, 격리 Emulator CLI는 기존 moderate14·high/critical0으로 CI의 high 기준 통과. 전달 문서5개·상대 링크89개/공백 검사와 별도 읽기 전용 문서 리뷰 APPROVED. 실제 원격 검사/병합 결과는 이후 전달 기록과 PR/Actions를 따른다.
