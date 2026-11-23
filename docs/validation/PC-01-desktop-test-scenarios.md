@@ -19,3 +19,5 @@
 - 2026-11-17 PC 로컬 환경에서 Playwright 브라우저 검사 **24개 통과**(신규 PC 흐름 1개와 기존 23개). Node 22.23.4, 로컬 Auth Emulator 및 Worker/D1, 독립 Chromium 컨텍스트를 사용했다. 실행 로그: Git 제외 `tmp/codex/PC-01-browser.log`.
 - PC-01~06의 전체 흐름과 PC-07의 기존 오류·충돌 회귀가 통과했다. 외부 서비스와 실메일·휴대폰은 확인하지 않았다.
 - 독립 리뷰에 따라 로컬 환경 표시 확인을 추가한 뒤 신규 시나리오 1개를 재실행해 통과했다. 로그: `tmp/codex/PC-01-browser-reviewed.log`. 24개 전체 결과는 해당 확인을 추가하기 전 실행이다.
+- 2026-11-23 `12e3a9c`에서 `node app-web/scripts/check.mjs` 전체 재실행: 단위/출시 14·JWT/D1/API 11·브라우저 24 = **49개 통과**, 가상 production 번들·Worker dry-run 통과. 로컬 로그: `tmp/codex/PC-01-delivery-check-2026-11-23.log`. [PR #6](https://github.com/nemo9nemo/gajaham/pull/6)과 병합 후 main `60b0d2b`의 [CI](https://github.com/nemo9nemo/gajaham/actions/runs/45186839820)도 통과했다.
+- 같은 날 웹·Worker audit 각 0건, 격리 개발용 Auth Emulator CLI는 중간 14·높음/심각 0건으로 high 기준 통과했다. 실제 운영·실메일·휴대폰은 확인하지 않았다.
