@@ -4,6 +4,8 @@
 
 ## 최종 검토 대상과 이전 작업
 
+2026-11-23: WEB-06 [PR #5](https://github.com/nemo9nemo/gajaham/pull/5)와 PC 테스트 [PR #6](https://github.com/nemo9nemo/gajaham/pull/6)은 병합됐고, PC 테스트 병합 main `60b0d2b`의 [CI](https://github.com/nemo9nemo/gajaham/actions/runs/45186839820)가 통과했다. [PC 검사 기록](../validation/PC-01-desktop-test-scenarios.md)은 운영·실메일·휴대폰 검사를 대신하지 않는다.
+
 2026-11-17 소스 비교 기준은 WEB-05·PR #3/#4 병합 코드가 반영된 main `f714893`이다. `codex/WEB-03-release-preparation`은 이전 통합 이력이다. [WEB-06](../plans/WEB-06-personal-beta-flow.md)의 사용 흐름 보완은 별도 작업 브랜치에서 구현·검증했고, 사용자 후속 요청으로 재검사·독립 리뷰·push/PR·원격 CI·병합을 진행한다. 실제 전달/병합 결과는 해당 PR·Actions와 후속 전달 기록을 따른다. 이 소스 병합 절차는 공개 운영 배포가 아니다. 이전 브랜치·UI-02 커밋은 이력으로 보존하고, 과거 정책/코드를 따로 병합해 최신 웹 정책을 되돌리지 않는다.
 
 [통합 PR #3](https://github.com/nemo9nemo/gajaham/pull/3)은 사용자 지시로 병합 완료했다. [병합 main 자동 검사](https://github.com/nemo9nemo/gajaham/actions/runs/42838162742)도 성공했다. 이후 소스 변경은 별도 작업 브랜치·독립 리뷰·PR 절차를 따른다. 실제 배포/운영 검사는 소스 병합과 구분한다.

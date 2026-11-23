@@ -1,6 +1,6 @@
 # 가자함 웹앱 출시 분석과 개선 제안
 
-문서 상태: **프로젝트 관리 문서 · 지속 갱신** · 최초 작성: **2026-11-17 (한국 시간)** · 최종 갱신: **2026-11-17 (한국 시간)**
+문서 상태: **프로젝트 관리 문서 · 지속 갱신** · 최초 작성: **2026-11-17 (한국 시간)** · 최종 갱신: **2026-11-23 (한국 시간)**
 
 코드 분석·자동 검사 기준: 로컬 main `f714893` / 2026-11-17 · 운영 설정 증거 기준: 2026-11-13 [WEB-05](../validation/WEB-05-production-auth-readiness.md) · [작업 범위와 검사 기록](../plans/RES-02-webapp-release-review.md)
 
@@ -333,3 +333,4 @@ WEB-06은 2단계의 구현·로컬 검증을 진행한 작업이다. U04 실기
 | 2026-11-17 WEB-06 커밋 리뷰 보완 | 시간 초과의 연속 실패 중단·중단 후 추가 조회 제거, 이메일 확인 완료 화면 갱신 회귀 보완 | 전체48 PASS·production/Worker dry-run PASS. 기존 미완료 운영/실기기·P2 경계 유지. 이전 `aca7332`는 리뷰 WARNING이며 수정 후 새 SHA를 검토 |
 | 2026-11-17 원격 전달 요청 | 사용자 요청으로 WEB-06 누적 변경의 재검사·커밋/push·PR 리뷰·CI·병합과 병합 main 검증 진행 | 운영/실메일/Galaxy·공개 배포 및 P2/F 미완료 경계는 유지. 실제 전달·병합 완료는 해당 PR/Actions·검토 SHA 기록으로 확인 |
 | 2026-11-17 PC-01 | PC 로컬 테스트 시나리오 및 자동 검사 추가 | [시나리오와 실행 결과](../validation/PC-01-desktop-test-scenarios.md): 브라우저 24개 통과. 실제 운영·실메일·휴대폰 검사는 미실행 |
+| 2026-11-23 PC-01 전달 | PC 테스트를 [PR #6](https://github.com/nemo9nemo/gajaham/pull/6)으로 병합 | `12e3a9c` 로컬 전체 49개 통과, 병합 main `60b0d2b` [CI 통과](https://github.com/nemo9nemo/gajaham/actions/runs/45186839820). [검사 기록](../validation/PC-01-desktop-test-scenarios.md). L 운영 검증·실메일·휴대폰·U05/U08 P2·F는 완료로 바뀌지 않음 |
